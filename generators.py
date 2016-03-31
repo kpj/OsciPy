@@ -58,3 +58,11 @@ def generate_simple_graph(_):
     graph.add_edge(0, 1)
 
     return graph
+
+def generate_snake_graph(size):
+    graph = nx.Graph()
+
+    for i in range(size-1):
+        graph.add_edge(i, i+1)
+
+    return graph

@@ -13,15 +13,16 @@ from tqdm import tqdm
 from utils import DictWrapper as DW, save
 from main import simulate_system
 from investigations import reconstruct_coupling_params
+from generators import generate_snake_graph
 
 
-def generate_systems(size=20):
+def generate_systems(max_size=20):
     """ Generate population of systems
     """
     systs = []
-    for p in np.linspace(0, 1, 5):
+    for size in range(2, max_size):
         # setup network
-        graph = nx.gnp_random_graph(size, p)
+        graph = generate_snake_graph(size)
 
         # setup dynamical system
         omega = 0.2
@@ -35,7 +36,7 @@ def generate_systems(size=20):
             'Phi': lambda t: OMEGA * t,
             'OMEGA': OMEGA,
             'dt': 0.01,
-            'tmax': 1
+            'tmax': 0.1
         })
 
         systs.append(DW({
@@ -86,6 +87,7 @@ def plot_errors(errors_A, errors_B):
         ax.errorbar(range(len(data)), y_mean, yerr=y_err, fmt='o')
 
         ax.set_title(title)
+        ax.set_xlabel('network size')
         ax.set_ylabel('reconstruction error')
 
     fig = plt.figure(figsize=(10,5))
