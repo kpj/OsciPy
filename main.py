@@ -17,7 +17,7 @@ def setup_system(size=4):
     """ All system configurations go here
     """
     # setup network
-    graph = generate_simple_graph(size)
+    graph = generate_graph(size)
 
     # setup dynamical system
     omega = 0.2
@@ -30,7 +30,8 @@ def setup_system(size=4):
         'o_vec': np.ones(dim) * omega,
         'Phi': lambda t: OMEGA * t,
         'OMEGA': OMEGA,
-        'dt': 0.01
+        'dt': 0.01,
+        'tmax': 20
     })
 
     return DictWrapper({
@@ -38,17 +39,18 @@ def setup_system(size=4):
         'system_config': system_config
     })
 
-def simulate_system(bundle, reps=10):
+def simulate_system(bundle, reps=10, check_laplacian=True, nested=False):
     """ Generate data from system setup
     """
     # lonely investigation :'(
-    investigate_laplacian(bundle.graph)
+    if check_laplacian:
+        investigate_laplacian(bundle.graph)
 
     # solve system on network
     corr_mats = []
     var_sers = []
     all_sols = []
-    for _ in trange(reps):
+    for _ in trange(reps, nested=nested):
         sols, ts = solve_system(bundle.system_config)
 
         cmat = compute_correlation_matrix(sols)
@@ -76,7 +78,6 @@ def handle_solution(bundle):
 
     # further investigations
     mean_var = np.mean(bundle.var_sers, axis=0)
-    reconstruct_coupling_params(bundle)
 
     # plot results
     data = DictWrapper({

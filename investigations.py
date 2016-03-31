@@ -72,7 +72,7 @@ def investigate_laplacian(graph):
     plt.ylabel(r'rank index')
     save(fig, 'laplacian_spectrum')
 
-def reconstruct_coupling_params(bundle):
+def reconstruct_coupling_params(bundle, verbose=True):
     """ Try to reconstruct A and B from observed data
     """
     c = bundle.system_config
@@ -91,7 +91,8 @@ def reconstruct_coupling_params(bundle):
     sol_dim = aggr_sols.shape[0] * c.A.shape[0]
     syst_dim = c.A.shape[0]**2 + c.A.shape[0]
 
-    print('Using', sol_dim, 'data points to solve system of', syst_dim, 'variables')
+    if verbose:
+        print('Using', sol_dim, 'data points to solve system of', syst_dim, 'variables')
 
     # create linear system
     rhs = np.empty((sol_dim, syst_dim))
@@ -122,8 +123,11 @@ def reconstruct_coupling_params(bundle):
     rec_b = x[-c.A.shape[0]:]
 
     # show result
-    print('Original A:\n', c.A)
-    print('Reconstructed A:\n', rec_a)
-    print()
-    print('Original B:', c.B)
-    print('Reconstructed B:', rec_b)
+    if verbose:
+        print('Original A:\n', c.A)
+        print('Reconstructed A:\n', rec_a)
+        print()
+        print('Original B:', c.B)
+        print('Reconstructed B:', rec_b)
+
+    return rec_a, rec_b
