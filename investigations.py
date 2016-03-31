@@ -79,40 +79,46 @@ def reconstruct_coupling_params(bundle):
     c = bundle.system_config
 
     # aggregate solution data
-    sample_size = 200
     aggr_sols = []
     for sol in bundle.all_sols:
-        #t_points = random.sample(
-        #    range(int(3/4*len(bundle.ts)), len(bundle.ts)), sample_size)
-        t_points = random.sample(range(len(bundle.ts)), sample_size)
+        t_points = np.array(range(len(bundle.ts)-1))
 
         slices = sol.T[t_points]
-        aggr_sols.extend(zip(slices, bundle.ts[t_points]))
+        slices_nex = sol.T[t_points+1]
+        aggr_sols.extend(zip(slices, bundle.ts[t_points], slices_nex))
 
-    sol_dim = len(aggr_sols)
+    aggr_sols = np.array(aggr_sols)
+
+    sol_dim = aggr_sols.shape[0] * c.A.shape[0]
     syst_dim = c.A.shape[0]**2 + c.A.shape[0]
 
     print('Using', sol_dim, 'data points to solve system of', syst_dim, 'variables')
 
-    # create coefficient matrix
-    a = np.empty((sol_dim, syst_dim))
-    for theta, t in aggr_sols:
+    # create linear system
+    rhs = np.empty((sol_dim, syst_dim))
+    lhs = np.empty(sol_dim)
+
+    for t_ind, (theta, t, theta_nex) in enumerate(aggr_sols):
         for i in range(c.A.shape[0]):
+            ind = i * aggr_sols.shape[0] + t_ind
+
+            # coefficient matrix
             coeffs_A = np.zeros(c.A.shape)
             for j in range(c.A.shape[1]):
-                coeffs_A[i,j] = np.cos(theta[i] - theta[j])
+                coeffs_A[i,j] = np.sin(theta[j] - theta[i])
 
             coeffs_B = np.zeros(c.A.shape[0])
             coeffs_B[i] = np.sin(c.Phi(t) - theta[i])
 
             row = np.hstack((coeffs_A.reshape(c.A.shape[0]**2), coeffs_B))
-            a[i,:] = row
+            rhs[ind,:] = row
 
-    # compute LHS vector
-    b = np.ones(sol_dim) * (c.OMEGA - c.o_vec[0])
+            # solution vector
+            theta_dot = (theta_nex[i] - theta[i]) / c.dt
+            lhs[ind] = theta_dot - c.o_vec[0]
 
     # solve system
-    x = np.linalg.lstsq(a, b)[0]
+    x = np.linalg.lstsq(rhs, lhs)[0]
     rec_a = x[:-c.A.shape[0]].reshape(c.A.shape)
     rec_b = x[-c.A.shape[0]:]
 

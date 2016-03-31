@@ -23,12 +23,14 @@ def setup_system(size=4):
     omega = 0.2
     OMEGA = 3
     dim = len(graph.nodes())
+
     system_config = DictWrapper({
         'A': nx.to_numpy_matrix(graph),
-        'B': np.ones((dim,)),
-        'o_vec': np.ones((dim,)) * omega,
+        'B': np.ones(dim),
+        'o_vec': np.ones(dim) * omega,
         'Phi': lambda t: OMEGA * t,
-        'OMEGA': OMEGA
+        'OMEGA': OMEGA,
+        'dt': 0.01
     })
 
     return DictWrapper({
