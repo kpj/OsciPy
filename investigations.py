@@ -2,12 +2,11 @@
 Bundle all functions together which investigate interesting properties
 """
 
-import random
-import itertools
-
 import numpy as np
 import networkx as nx
 import matplotlib.pylab as plt
+
+from utils import save
 
 
 def compute_correlation_matrix(sols):
@@ -67,11 +66,11 @@ def investigate_laplacian(graph):
         inv_w = 1 / w
         pairs.append((inv_w, i))
 
-    plt.figure()
+    fig = plt.figure()
     plt.scatter(*zip(*pairs))
     plt.xlabel(r'$\frac{1}{\lambda_i}$')
     plt.ylabel(r'rank index')
-    plt.savefig('le_spectrum.pdf')
+    save(fig, 'laplacian_spectrum')
 
 def reconstruct_coupling_params(bundle):
     """ Try to reconstruct A and B from observed data

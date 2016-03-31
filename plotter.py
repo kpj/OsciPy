@@ -9,6 +9,8 @@ import matplotlib as mpl
 import matplotlib.pylab as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from utils import save
+
 
 def plot_matrix(mat, ax, title=None, allow_negative=True):
     """ Plot system evolution
@@ -102,8 +104,7 @@ def plot_result(data):
         np.mean(data.cmats, axis=0), data.ts, plt.subplot(gs[1, 2]))
 
     plt.tight_layout()
-    fig.savefig('result.pdf')
-    fig.savefig('foo.png')
+    save(fig, 'overview_plot')
 
     # variance investigation
     fig = plt.figure(figsize=(20, 10))
@@ -113,8 +114,7 @@ def plot_result(data):
     plot_series(data.vser, data.ts, plt.subplot(gs[1]))
 
     plt.tight_layout()
-    fig.savefig('cluster_num.pdf')
-    fig.savefig('bar.png')
+    save(fig, 'cluster_development')
 
     # correlation matrix heatmap
     fig = plt.figure()
@@ -125,5 +125,4 @@ def plot_result(data):
         title='Summed correlation matrix')
 
     plt.tight_layout()
-    fig.savefig('correlation_matrix.pdf')
-    fig.savefig('baz.png')
+    save(fig, 'correlation_matrix')

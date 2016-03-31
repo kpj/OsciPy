@@ -2,6 +2,8 @@
 Commonly used functions
 """
 
+import os
+
 import numpy as np
 import numpy.random as npr
 
@@ -44,3 +46,18 @@ def solve_system(conf, tmax=0.05):
     sol %= 2*np.pi
 
     return sol, ts
+
+def save(fig, fname, **kwargs):
+    """ Save figure in multiple formats and make sure that path exists
+    """
+    # save images in right directory
+    sname = 'images/{}'.format(fname)
+
+    # make sure directory exists
+    fdir = os.path.dirname(sname)
+    if len(fdir) > 0 and not os.path.isdir(fdir):
+        os.makedirs(fdir)
+
+    # save figure
+    fig.savefig('{}.pdf'.format(sname), **kwargs)
+    fig.savefig('{}.png'.format(sname), **kwargs)
