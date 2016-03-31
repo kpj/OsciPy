@@ -115,7 +115,7 @@ def reconstruct_coupling_params(bundle):
 
             # solution vector
             theta_dot = (theta_nex[i] - theta[i]) / c.dt
-            lhs[ind] = theta_dot - c.o_vec[0]
+            lhs[ind] = theta_dot - c.o_vec[i]
 
     # solve system
     x = np.linalg.lstsq(rhs, lhs)[0]

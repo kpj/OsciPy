@@ -51,3 +51,10 @@ def generate_paper_graph(_):
         (2,0),(7,0),(8,0)
     ])
     return graph
+
+def generate_simple_graph(_):
+    graph = nx.Graph()
+
+    graph.add_edge(0, 1)
+
+    return graph

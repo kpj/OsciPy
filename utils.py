@@ -32,7 +32,7 @@ def generate_system(omega_vec, A, B, Phi):
         return np.array(ode)
     return func
 
-def solve_system(conf, tmax=20):
+def solve_system(conf, tmax=0.05):
     """ Solve particular configuration
     """
     func = generate_system(conf.o_vec, conf.A, conf.B, conf.Phi)

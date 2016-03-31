@@ -17,7 +17,7 @@ def setup_system(size=4):
     """ All system configurations go here
     """
     # setup network
-    graph = generate_graph(size)
+    graph = generate_simple_graph(size)
 
     # setup dynamical system
     omega = 0.2
@@ -26,7 +26,7 @@ def setup_system(size=4):
 
     system_config = DictWrapper({
         'A': nx.to_numpy_matrix(graph),
-        'B': np.ones(dim),
+        'B': np.random.uniform(0, 5, size=dim),
         'o_vec': np.ones(dim) * omega,
         'Phi': lambda t: OMEGA * t,
         'OMEGA': OMEGA,
@@ -38,7 +38,7 @@ def setup_system(size=4):
         'system_config': system_config
     })
 
-def simulate_system(bundle, reps=50):
+def simulate_system(bundle, reps=10):
     """ Generate data from system setup
     """
     # lonely investigation :'(
