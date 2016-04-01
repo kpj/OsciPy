@@ -13,16 +13,18 @@ from tqdm import tqdm
 from utils import DictWrapper as DW, save
 from main import simulate_system
 from investigations import reconstruct_coupling_params
-from generators import generate_snake_graph
+from generators import *
 
 
-def generate_systems(max_size=20):
+def generate_systems(max_size=14):
     """ Generate population of systems
     """
+    para_range = range(2, max_size)
+
     systs = []
-    for size in range(2, max_size):
+    for size in para_range:
         # setup network
-        graph = generate_snake_graph(size)
+        graph = generate_ring_graph(size)
 
         # setup dynamical system
         omega = 0.2
@@ -43,7 +45,7 @@ def generate_systems(max_size=20):
             'graph': graph,
             'system_config': system_config
         }))
-    return systs
+    return systs, para_range
 
 def process(bundle, reps=1):
     """ Solve system bundle and return data
@@ -71,7 +73,7 @@ def compute_error(result):
 
     return err_A, err_B
 
-def plot_errors(errors_A, errors_B):
+def plot_errors(prange, errors_A, errors_B):
     """ Plot error development of parameter reconstruction
     """
     def transform(dat):
@@ -84,13 +86,13 @@ def plot_errors(errors_A, errors_B):
 
     def plot(data, ax, title):
         y_mean, y_err = transform(data)
-        ax.errorbar(range(len(data)), y_mean, yerr=y_err, fmt='o')
+        ax.errorbar(prange, y_mean, yerr=y_err, fmt='o')
 
         ax.set_title(title)
         ax.set_xlabel('network size')
         ax.set_ylabel('reconstruction error')
 
-    fig = plt.figure(figsize=(10,5))
+    fig = plt.figure(figsize=(10,4))
     gs = mpl.gridspec.GridSpec(1, 2)
 
     plot(errors_A, plt.subplot(gs[0]), 'A')
@@ -102,7 +104,7 @@ def plot_errors(errors_A, errors_B):
 def main(reps=10):
     """ General interface
     """
-    systems = generate_systems()
+    systems, prange = generate_systems()
 
     errors_A, errors_B = [], []
     for bundle in tqdm(systems):
@@ -116,7 +118,7 @@ def main(reps=10):
         errors_A.append(tmp_A)
         errors_B.append(tmp_B)
 
-    plot_errors(errors_A, errors_B)
+    plot_errors(prange, errors_A, errors_B)
 
 
 if __name__ == '__main__':
