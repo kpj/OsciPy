@@ -14,6 +14,9 @@ class DictWrapper(dict):
     """ Dict with dot-notation access functionality
     """
     def __getattr__(self, attr):
+        if not attr in self:
+            raise KeyError('{} not in {}'.format(attr, self.keys()))
+
         return self.get(attr)
 
     __setattr__ = dict.__setitem__

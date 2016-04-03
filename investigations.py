@@ -8,6 +8,8 @@ import matplotlib.pylab as plt
 
 from utils import save
 
+from tqdm import tqdm
+
 
 def compute_correlation_matrix(sols):
     """ Compute pairwise node-correlations of solution
@@ -72,24 +74,26 @@ def investigate_laplacian(graph):
     plt.ylabel(r'rank index')
     save(fig, 'laplacian_spectrum')
 
-def reconstruct_coupling_params(bundle, verbose=True):
+def reconstruct_coupling_params(conf, data, verbose=True):
     """ Try to reconstruct A and B from observed data
     """
-    c = bundle.system_config
-
     # aggregate solution data
     aggr_sols = []
-    for sol in bundle.all_sols:
-        t_points = np.array(range(len(bundle.ts)-1))
+    for sys_conf, all_sols in data:
+        for sol in all_sols:
+            t_points = np.array(range(len(conf.ts)-1))
 
-        slices = sol.T[t_points]
-        slices_nex = sol.T[t_points+1]
-        aggr_sols.extend(zip(slices, bundle.ts[t_points], slices_nex))
+            slices = sol.T[t_points]
+            slices_nex = sol.T[t_points+1]
+            aggr_sols.extend(zip(
+                slices, slices_nex,
+                [sys_conf.o_vec] * len(t_points),
+                conf.ts[t_points]))
 
     aggr_sols = np.array(aggr_sols)
 
-    sol_dim = aggr_sols.shape[0] * c.A.shape[0]
-    syst_dim = c.A.shape[0]**2 + c.A.shape[0]
+    sol_dim = aggr_sols.shape[0] * conf.A.shape[0]
+    syst_dim = conf.A.shape[0]**2 + conf.A.shape[0]
 
     # create linear system
     rhs = []
@@ -98,17 +102,17 @@ def reconstruct_coupling_params(bundle, verbose=True):
     encountered_rows = []
     round_fac = 1
 
-    for t_ind, (theta, t, theta_nex) in enumerate(aggr_sols):
-        for i in range(c.A.shape[0]):
+    for theta, theta_nex, o_vec, t in tqdm(aggr_sols, nested=True):
+        for i in range(conf.A.shape[0]):
             # coefficient matrix
-            coeffs_A = np.zeros(c.A.shape)
-            for j in range(c.A.shape[1]):
+            coeffs_A = np.zeros(conf.A.shape)
+            for j in range(conf.A.shape[1]):
                 coeffs_A[i,j] = np.sin(theta[j] - theta[i])
 
-            coeffs_B = np.zeros(c.A.shape[0])
-            coeffs_B[i] = np.sin(c.Phi(t) - theta[i])
+            coeffs_B = np.zeros(conf.A.shape[0])
+            coeffs_B[i] = np.sin(conf.Phi(t) - theta[i])
 
-            row = np.hstack((coeffs_A.reshape(c.A.shape[0]**2), coeffs_B))
+            row = np.hstack((coeffs_A.reshape(conf.A.shape[0]**2), coeffs_B))
             append_check = not np.round(row, round_fac).tolist() in encountered_rows
 
             if append_check:
@@ -116,9 +120,9 @@ def reconstruct_coupling_params(bundle, verbose=True):
                 rhs.append(row)
 
             # solution vector
-            theta_dot = (theta_nex[i] - theta[i]) / c.dt
+            theta_dot = (theta_nex[i] - theta[i]) / conf.dt
             if append_check:
-                lhs.append(theta_dot - c.o_vec[i])
+                lhs.append(theta_dot - o_vec[i])
 
     rhs = np.array(rhs)
     lhs = np.array(lhs)
@@ -128,15 +132,15 @@ def reconstruct_coupling_params(bundle, verbose=True):
 
     # solve system
     x = np.linalg.lstsq(rhs, lhs)[0]
-    rec_a = x[:-c.A.shape[0]].reshape(c.A.shape)
-    rec_b = x[-c.A.shape[0]:]
+    rec_a = x[:-conf.A.shape[0]].reshape(conf.A.shape)
+    rec_b = x[-conf.A.shape[0]:]
 
     # show result
     if verbose:
-        print('Original A:\n', c.A)
+        print('Original A:\n', conf.A)
         print('Reconstructed A:\n', rec_a)
         print()
-        print('Original B:', c.B)
+        print('Original B:', conf.B)
         print('Reconstructed B:', rec_b)
 
     return rec_a, rec_b

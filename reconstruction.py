@@ -8,58 +8,76 @@ import networkx as nx
 import matplotlib as mpl
 import matplotlib.pylab as plt
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
-from utils import DictWrapper as DW, save
-from main import simulate_system
+from utils import DictWrapper as DW, save, solve_system
 from investigations import reconstruct_coupling_params
 from generators import *
 
 
-def generate_systems(max_size=14):
+def generate_systems(max_size=5, o_size=20):
     """ Generate population of systems
     """
     para_range = range(2, max_size)
+    o_range = np.random.uniform(0, 3, o_size)
 
     systs = []
     for size in para_range:
+        systs.append([])
+
         # setup network
         graph = generate_ring_graph(size)
 
-        # setup dynamical system
-        omega = 0.2
-        OMEGA = 3
         dim = len(graph.nodes())
+        Bvec = np.random.uniform(0, 5, size=dim)
 
-        system_config = DW({
-            'A': nx.to_numpy_matrix(graph),
-            'B': np.random.uniform(0, 5, size=dim),
-            'o_vec': np.ones(dim) * omega,
-            'Phi': lambda t: OMEGA * t,
-            'OMEGA': OMEGA,
-            'dt': 0.01,
-            'tmax': 0.1
-        })
+        for omega in o_range:
+            # setup dynamical system
+            OMEGA = 3
+            system_config = DW({
+                'A': nx.to_numpy_matrix(graph),
+                'B': Bvec,
+                'o_vec': np.ones(dim) * omega,
+                'Phi': lambda t: OMEGA * t,
+                'OMEGA': OMEGA,
+                'dt': 0.01,
+                'tmax': 0.1
+            })
 
-        systs.append(DW({
-            'graph': graph,
-            'system_config': system_config
-        }))
+            systs[-1].append(DW({
+                'graph': graph,
+                'system_config': system_config
+            }))
+
     return systs, para_range
 
-def process(bundle, reps=1):
+def process(bundle_pack, reps=10):
     """ Solve system bundle and return data
     """
+    # assemble final bundle from pack
+    repr_bundle = bundle_pack[0]
+
+    data = []
+    for bundle in tqdm(bundle_pack, nested=True):
+        all_sols = []
+        for _ in range(reps):
+            sols, ts = solve_system(bundle.system_config)
+            all_sols.append(sols)
+        data.append((bundle.system_config, all_sols))
+
+    # reconstruct parameters
     rec_a, rec_b = reconstruct_coupling_params(
-        simulate_system(
-            bundle,
-            reps=reps, check_laplacian=False,
-            nested=True),
-        verbose=False)
+        DW({
+            'A': repr_bundle.system_config.A,
+            'B': repr_bundle.system_config.B,
+            'Phi': repr_bundle.system_config.Phi,
+            'dt': repr_bundle.system_config.dt,
+            'ts': ts
+        }), data, verbose=False)
 
     return DW({
-        'A': DW({'orig': bundle.system_config.A, 'rec': rec_a}),
-        'B': DW({'orig': bundle.system_config.B, 'rec': rec_b}),
+        'A': DW({'orig': repr_bundle.system_config.A, 'rec': rec_a}),
+        'B': DW({'orig': repr_bundle.system_config.B, 'rec': rec_b}),
     })
 
 def compute_error(result):
@@ -101,16 +119,16 @@ def plot_errors(prange, errors_A, errors_B):
     plt.tight_layout()
     save(fig, 'reconstruction_error')
 
-def main(reps=10):
+def main(reps_per_config=5):
     """ General interface
     """
     systems, prange = generate_systems()
 
     errors_A, errors_B = [], []
-    for bundle in tqdm(systems):
+    for bundle_pack in tqdm(systems):
         tmp_A, tmp_B = [], []
-        for _ in range(reps):
-            res = process(bundle)
+        for _ in trange(reps_per_config, nested=True):
+            res = process(bundle_pack)
             err_A, err_B = compute_error(res)
 
             tmp_A.append(err_A)
