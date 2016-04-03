@@ -102,7 +102,7 @@ def reconstruct_coupling_params(conf, data, verbose=True):
     encountered_rows = []
     round_fac = 1
 
-    for theta, theta_nex, o_vec, t in tqdm(aggr_sols, nested=True):
+    for theta, theta_nex, o_vec, t in tqdm(aggr_sols, nested=not verbose):
         for i in range(conf.A.shape[0]):
             # coefficient matrix
             coeffs_A = np.zeros(conf.A.shape)

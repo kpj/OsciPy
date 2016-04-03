@@ -3,9 +3,10 @@ Try to reconstruct system parameters from observed solutions
 """
 
 import numpy as np
+import pandas as pd
 import networkx as nx
 
-import matplotlib as mpl
+import seaborn as sns
 import matplotlib.pylab as plt
 
 from tqdm import tqdm, trange
@@ -15,18 +16,18 @@ from investigations import reconstruct_coupling_params
 from generators import *
 
 
-def generate_systems(max_size=5, o_size=20):
+def generate_systems(prop_step=5, o_size=20):
     """ Generate population of systems
     """
-    para_range = range(2, max_size)
+    para_range = np.linspace(0, 1, prop_step)
     o_range = np.random.uniform(0, 3, o_size)
 
     systs = []
-    for size in para_range:
+    for p in para_range:
         systs.append([])
 
         # setup network
-        graph = generate_ring_graph(size)
+        graph = nx.gnp_random_graph(20, p)
 
         dim = len(graph.nodes())
         Bvec = np.random.uniform(0, 5, size=dim)
@@ -91,32 +92,11 @@ def compute_error(result):
 
     return err_A, err_B
 
-def plot_errors(prange, errors_A, errors_B):
+def plot_errors(df):
     """ Plot error development of parameter reconstruction
     """
-    def transform(dat):
-        y_mean = []
-        y_err = []
-        for e in dat:
-            y_mean.append(np.mean(e))
-            y_err.append(np.std(e))
-        return y_mean, y_err
-
-    def plot(data, ax, title):
-        y_mean, y_err = transform(data)
-        ax.errorbar(prange, y_mean, yerr=y_err, fmt='o')
-
-        ax.set_title(title)
-        ax.set_xlabel('network size')
-        ax.set_ylabel('reconstruction error')
-
-    fig = plt.figure(figsize=(10,4))
-    gs = mpl.gridspec.GridSpec(1, 2)
-
-    plot(errors_A, plt.subplot(gs[0]), 'A')
-    plot(errors_B, plt.subplot(gs[1]), 'B')
-
-    plt.tight_layout()
+    fig = plt.figure()
+    sns.boxplot(x='graph_property', y='err_B', data=df)
     save(fig, 'reconstruction_error')
 
 def main(reps_per_config=5):
@@ -124,19 +104,23 @@ def main(reps_per_config=5):
     """
     systems, prange = generate_systems()
 
-    errors_A, errors_B = [], []
-    for bundle_pack in tqdm(systems):
+    df = pd.DataFrame(columns=['graph_property', 'err_A', 'err_B'])
+    for i, bundle_pack in enumerate(tqdm(systems)):
         tmp_A, tmp_B = [], []
         for _ in trange(reps_per_config, nested=True):
             res = process(bundle_pack)
+
+            plot_comparison(bundle_pack, res)
             err_A, err_B = compute_error(res)
 
-            tmp_A.append(err_A)
-            tmp_B.append(err_B)
-        errors_A.append(tmp_A)
-        errors_B.append(tmp_B)
+            df = df.append({
+                'graph_property': prange[i],
+                'err_A': err_A,
+                'err_B': err_B
+            }, ignore_index=True)
+    df.graph_property = pd.factorize(df.graph_property)[0]
 
-    plot_errors(prange, errors_A, errors_B)
+    plot_errors(df)
 
 
 if __name__ == '__main__':
