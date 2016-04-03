@@ -99,7 +99,7 @@ def plot_errors(df):
     sns.boxplot(x='graph_property', y='err_B', data=df)
     save(fig, 'reconstruction_error')
 
-def main(reps_per_config=5):
+def main(reps_per_config=50):
     """ General interface
     """
     systems, prange = generate_systems()
@@ -110,7 +110,6 @@ def main(reps_per_config=5):
         for _ in trange(reps_per_config, nested=True):
             res = process(bundle_pack)
 
-            plot_comparison(bundle_pack, res)
             err_A, err_B = compute_error(res)
 
             df = df.append({
@@ -118,7 +117,9 @@ def main(reps_per_config=5):
                 'err_A': err_A,
                 'err_B': err_B
             }, ignore_index=True)
+
     df.graph_property = pd.factorize(df.graph_property)[0]
+    df.to_pickle('df.bak')
 
     plot_errors(df)
 
