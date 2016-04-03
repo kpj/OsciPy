@@ -91,17 +91,15 @@ def reconstruct_coupling_params(bundle, verbose=True):
     sol_dim = aggr_sols.shape[0] * c.A.shape[0]
     syst_dim = c.A.shape[0]**2 + c.A.shape[0]
 
-    if verbose:
-        print('Using', sol_dim, 'data points to solve system of', syst_dim, 'variables')
-
     # create linear system
-    rhs = np.empty((sol_dim, syst_dim))
-    lhs = np.empty(sol_dim)
+    rhs = []
+    lhs = []
+
+    encountered_rows = []
+    round_fac = 1
 
     for t_ind, (theta, t, theta_nex) in enumerate(aggr_sols):
         for i in range(c.A.shape[0]):
-            ind = i * aggr_sols.shape[0] + t_ind
-
             # coefficient matrix
             coeffs_A = np.zeros(c.A.shape)
             for j in range(c.A.shape[1]):
@@ -111,11 +109,22 @@ def reconstruct_coupling_params(bundle, verbose=True):
             coeffs_B[i] = np.sin(c.Phi(t) - theta[i])
 
             row = np.hstack((coeffs_A.reshape(c.A.shape[0]**2), coeffs_B))
-            rhs[ind,:] = row
+            append_check = not np.round(row, round_fac).tolist() in encountered_rows
+
+            if append_check:
+                encountered_rows.append(np.round(row, round_fac).tolist())
+                rhs.append(row)
 
             # solution vector
             theta_dot = (theta_nex[i] - theta[i]) / c.dt
-            lhs[ind] = theta_dot - c.o_vec[i]
+            if append_check:
+                lhs.append(theta_dot - c.o_vec[i])
+
+    rhs = np.array(rhs)
+    lhs = np.array(lhs)
+
+    if verbose:
+        print('Using', rhs.shape[0], 'out of', sol_dim, 'data points to solve system of', syst_dim, 'variables')
 
     # solve system
     x = np.linalg.lstsq(rhs, lhs)[0]
