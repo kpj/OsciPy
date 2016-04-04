@@ -99,24 +99,24 @@ def reconstruct_coupling_params(conf, data, verbose=True):
     rhs = []
     lhs = []
 
-    encountered_rows = []
+    encountered_rows = set()
     round_fac = 1
 
     for theta, theta_nex, o_vec, t in tqdm(aggr_sols, nested=not verbose):
         for i in range(conf.A.shape[0]):
             # coefficient matrix
             coeffs_A = np.zeros(conf.A.shape)
-            for j in range(conf.A.shape[1]):
-                coeffs_A[i,j] = np.sin(theta[j] - theta[i])
+            tmp = np.reshape(theta, (len(theta), 1))
+            coeffs_A[i,:] = np.sin(tmp.transpose() - tmp)[i,:]
 
             coeffs_B = np.zeros(conf.A.shape[0])
             coeffs_B[i] = np.sin(conf.Phi(t) - theta[i])
 
-            row = np.hstack((coeffs_A.reshape(conf.A.shape[0]**2), coeffs_B))
-            append_check = not np.round(row, round_fac).tolist() in encountered_rows
+            row = coeffs_A.reshape(conf.A.shape[0]**2).tolist() + coeffs_B.tolist()
+            append_check = not tuple(np.round(row, round_fac).tolist()) in encountered_rows
 
             if append_check:
-                encountered_rows.append(np.round(row, round_fac).tolist())
+                encountered_rows.add(tuple(np.round(row, round_fac).tolist()))
                 rhs.append(row)
 
             # solution vector

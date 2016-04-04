@@ -117,9 +117,8 @@ def main(reps_per_config=50):
                 'err_A': err_A,
                 'err_B': err_B
             }, ignore_index=True)
-
+            df.to_pickle('df.bak')
     df.graph_property = pd.factorize(df.graph_property)[0]
-    df.to_pickle('df.bak')
 
     plot_errors(df)
 
