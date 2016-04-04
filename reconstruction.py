@@ -84,21 +84,18 @@ def process(bundle_pack, reps=10):
     })
 
 def compute_error(result):
-    """ Compute error of reconstruction
+    """ Compute relative error of reconstruction
     """
-    diff_A = abs(result.A.orig - result.A.rec)
-    diff_B = abs(result.B.orig - result.B.rec)
+    rel_err_A = abs(result.A.rec - result.A.orig) / result.A.orig
+    rel_err_B = abs(result.B.rec - result.B.orig) / result.B.orig
 
-    err_A = np.sum(diff_A)/result.A.orig.size
-    err_B = np.sum(diff_B)/result.B.orig.size
-
-    return err_A, err_B
+    return np.mean(rel_err_A), np.mean(rel_err_B)
 
 def plot_errors(df):
     """ Plot error development of parameter reconstruction
     """
     fig = plt.figure()
-    sns.boxplot(x='graph_property', y='error', hue='parameter', data=df)
+    sns.boxplot(x='graph_property', y='relative_error', hue='parameter', data=df)
     save(fig, 'reconstruction_error')
 
 def main(reps_per_config=50):
@@ -106,7 +103,7 @@ def main(reps_per_config=50):
     """
     systems, prange = generate_systems()
 
-    df = pd.DataFrame(columns=['graph_property', 'parameter', 'error'])
+    df = pd.DataFrame(columns=['graph_property', 'parameter', 'relative_error'])
     for i, bundle_pack in enumerate(tqdm(systems)):
         tmp_A, tmp_B = [], []
         for _ in trange(reps_per_config, nested=True):
@@ -115,7 +112,7 @@ def main(reps_per_config=50):
             err_A, err_B = compute_error(res)
 
             df = df.append([
-                {'graph_property': prange[i], 'parameter': 'A', 'error': err_A}, {'graph_property': prange[i], 'parameter': 'B', 'error': err_B}
+                {'graph_property': prange[i], 'parameter': 'A', 'relative_error': err_A}, {'graph_property': prange[i], 'parameter': 'B', 'relative_error': err_B}
             ], ignore_index=True)
         df.to_pickle('df.bak')
 
