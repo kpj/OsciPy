@@ -2,6 +2,8 @@
 Try to reconstruct system parameters from observed solutions
 """
 
+import sys
+
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -96,7 +98,7 @@ def plot_errors(df):
     """ Plot error development of parameter reconstruction
     """
     fig = plt.figure()
-    sns.boxplot(x='graph_property', y='err_B', data=df)
+    sns.boxplot(x='graph_property', y='error', hue='parameter', data=df)
     save(fig, 'reconstruction_error')
 
 def main(reps_per_config=50):
@@ -104,7 +106,7 @@ def main(reps_per_config=50):
     """
     systems, prange = generate_systems()
 
-    df = pd.DataFrame(columns=['graph_property', 'err_A', 'err_B'])
+    df = pd.DataFrame(columns=['graph_property', 'parameter', 'error'])
     for i, bundle_pack in enumerate(tqdm(systems)):
         tmp_A, tmp_B = [], []
         for _ in trange(reps_per_config, nested=True):
@@ -112,16 +114,16 @@ def main(reps_per_config=50):
 
             err_A, err_B = compute_error(res)
 
-            df = df.append({
-                'graph_property': prange[i],
-                'err_A': err_A,
-                'err_B': err_B
-            }, ignore_index=True)
-            df.to_pickle('df.bak')
-    df.graph_property = pd.factorize(df.graph_property)[0]
+            df = df.append([
+                {'graph_property': prange[i], 'parameter': 'A', 'error': err_A}, {'graph_property': prange[i], 'parameter': 'B', 'error': err_B}
+            ], ignore_index=True)
+        df.to_pickle('df.bak')
 
     plot_errors(df)
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) == 1:
+        main()
+    else:
+        plot_errors(pd.read_pickle(sys.argv[1]))
