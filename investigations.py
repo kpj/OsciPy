@@ -93,7 +93,7 @@ def reconstruct_coupling_params(conf, data, verbose=True):
     aggr_sols = np.array(aggr_sols)
 
     sol_dim = aggr_sols.shape[0] * conf.A.shape[0]
-    syst_dim = conf.A.shape[0]**2 + conf.A.shape[0]
+    syst_dim = conf.A.shape[0]**2
 
     # create linear system
     rhs = []
@@ -102,6 +102,11 @@ def reconstruct_coupling_params(conf, data, verbose=True):
     encountered_rows = set()
     round_fac = 1
 
+    nondiag_inds = np.where(
+        np.arange(conf.A.size) % (conf.A.shape[0]+1) != 0)
+    diag_inds = np.where(
+        np.arange(conf.A.size) % (conf.A.shape[0]+1) == 0)
+
     for theta, theta_nex, o_vec, t in tqdm(aggr_sols, nested=not verbose):
         for i in range(conf.A.shape[0]):
             # coefficient matrix
@@ -109,10 +114,12 @@ def reconstruct_coupling_params(conf, data, verbose=True):
             tmp = np.reshape(theta, (len(theta), 1))
             coeffs_A[i,:] = np.sin(tmp.transpose() - tmp)[i,:]
 
+            flat_A = coeffs_A.reshape(conf.A.shape[0]**2)[nondiag_inds]
+
             coeffs_B = np.zeros(conf.A.shape[0])
             coeffs_B[i] = np.sin(conf.Phi(t) - theta[i])
 
-            row = coeffs_A.reshape(conf.A.shape[0]**2).tolist() + coeffs_B.tolist()
+            row = flat_A.tolist() + coeffs_B.tolist()
             append_check = not tuple(np.round(row, round_fac).tolist()) in encountered_rows
 
             if append_check:
@@ -132,7 +139,11 @@ def reconstruct_coupling_params(conf, data, verbose=True):
 
     # solve system
     x = np.linalg.lstsq(rhs, lhs)[0]
-    rec_a = x[:-conf.A.shape[0]].reshape(conf.A.shape)
+
+    extr = x[:-conf.A.shape[0]]
+    for i in diag_inds[0]: extr = np.insert(extr, i, 0)
+
+    rec_a = extr.reshape(conf.A.shape)
     rec_b = x[-conf.A.shape[0]:]
 
     # show result
