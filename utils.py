@@ -37,16 +37,17 @@ def generate_system(omega_vec, A, B, Phi):
         return np.array(ode)
     return func
 
-def solve_system(conf):
+def solve_system(conf, init=None, force_mod=True):
     """ Solve particular configuration
     """
     func = generate_system(conf.o_vec, conf.A, conf.B, conf.Phi)
 
     ts = np.arange(0, conf.tmax, conf.dt)
-    init = npr.uniform(0, 2*np.pi, size=conf.o_vec.shape)
+    if init is None:
+        init = npr.uniform(0, 2*np.pi, size=conf.o_vec.shape)
 
     sol = odeint(func, init, ts).T
-    sol %= 2*np.pi
+    if force_mod: sol %= 2*np.pi
 
     return sol, ts
 

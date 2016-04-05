@@ -69,7 +69,7 @@ def process(bundle_pack, reps=10):
     for bundle in tqdm(bundle_pack, nested=True):
         all_sols = []
         for _ in range(reps):
-            sols, ts = solve_system(bundle.system_config)
+            sols, ts = solve_system(bundle.system_config, force_mod=False)
             all_sols.append(sols)
         data.append((bundle.system_config, all_sols))
 
