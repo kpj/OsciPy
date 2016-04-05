@@ -91,7 +91,8 @@ def process(bundle_pack, reps=10):
 def compute_error(result):
     """ Compute relative error of reconstruction
     """
-    rel_err_A = abs(result.A.rec - result.A.orig) / result.A.orig
+    inds = np.nonzero(result.A.orig)
+    rel_err_A = abs(result.A.rec[inds] - result.A.orig[inds]) / result.A.orig[inds]
     rel_err_B = abs(result.B.rec - result.B.orig) / result.B.orig
 
     return np.mean(rel_err_A), np.mean(rel_err_B)
@@ -136,7 +137,7 @@ def compare_solution(res):
         unit='source', condition='oscillator',
         estimator=np.mean,
         data=df)
-    plt.title(r'$A_{{err}} = {}, B_{{err}} = {}$'.format(*compute_error(res)))
+    plt.title(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(*compute_error(res)))
 
     save(fig, 'solution_comparison')
 
