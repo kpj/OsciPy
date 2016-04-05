@@ -9,12 +9,14 @@ import pandas as pd
 import networkx as nx
 
 import seaborn as sns
+import matplotlib as mpl
 import matplotlib.pylab as plt
 
 from tqdm import tqdm, trange
 
 from utils import DictWrapper as DW, save, solve_system
 from investigations import reconstruct_coupling_params
+from plotter import plot_graph
 from generators import *
 
 
@@ -104,8 +106,8 @@ def plot_errors(df):
     sns.boxplot(x='graph_property', y='relative_error', hue='parameter', data=df)
     save(fig, 'reconstruction_error')
 
-def compare_solution(res):
-    """ Compare solution from original and reconstructed parameters
+def compute_solutions(res):
+    """ Compute solution from original and reconstructed parameters
     """
     # configure comparison
     omega = 0.5
@@ -129,17 +131,38 @@ def compare_solution(res):
                 {'time': t, 'theta': rec_val, 'oscillator': i, 'source': 'rec'}
             ], ignore_index=True)
 
-    # plot result
-    fig = plt.figure()
+    return df
 
+def plot_reconstruction_result(res):
+    """ Plot original and reconstructed graph plus time series
+    """
+    fig = plt.figure(figsize=(32, 8))
+    gs = mpl.gridspec.GridSpec(1, 4)
+
+    # original graph
+    orig_ax = plt.subplot(gs[0])
+    plot_graph(nx.from_numpy_matrix(res.A.orig), orig_ax)
+    orig_ax.set_title('Original graph')
+
+    # time series
+    ax = plt.subplot(gs[1:3])
     sns.tsplot(
         time='time', value='theta',
         unit='source', condition='oscillator',
-        estimator=np.mean,
-        data=df)
-    plt.title(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(*compute_error(res)))
+        estimator=np.mean, legend=False,
+        data=compute_solutions(res),
+        ax=ax)
+    ax.set_title(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(*compute_error(res)))
 
-    save(fig, 'solution_comparison')
+    # reconstructed graph
+    rec_ax = plt.subplot(gs[3])
+    tmp = res.A.rec
+    tmp[abs(tmp) < 1e-1] = 0
+    plot_graph(nx.from_numpy_matrix(tmp), rec_ax)
+    rec_ax.set_title('Reconstructed graph')
+
+    plt.tight_layout()
+    save(fig, 'reconstruction_overview')
 
 def main(reps_per_config=50):
     """ General interface
@@ -152,7 +175,7 @@ def main(reps_per_config=50):
         for _ in trange(reps_per_config, nested=True):
             res = process(bundle_pack)
 
-            #compare_solution(res)
+            #plot_reconstruction_result(res)
             err_A, err_B = compute_error(res)
 
             df = df.append([
