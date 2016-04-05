@@ -18,6 +18,19 @@ from investigations import reconstruct_coupling_params
 from generators import *
 
 
+def get_base_config(A, B, omega, OMEGA=3):
+    """ Get base of system config
+    """
+    return DW({
+        'A': A,
+        'B': B,
+        'o_vec': np.ones(A.shape[0]) * omega,
+        'Phi': lambda t: OMEGA * t,
+        'OMEGA': OMEGA,
+        'dt': 0.01,
+        'tmax': 10
+    })
+
 def generate_systems(prop_step=5, o_size=20):
     """ Generate population of systems
     """
@@ -36,16 +49,8 @@ def generate_systems(prop_step=5, o_size=20):
 
         for omega in o_range:
             # setup dynamical system
-            OMEGA = 3
-            system_config = DW({
-                'A': nx.to_numpy_matrix(graph),
-                'B': Bvec,
-                'o_vec': np.ones(dim) * omega,
-                'Phi': lambda t: OMEGA * t,
-                'OMEGA': OMEGA,
-                'dt': 0.01,
-                'tmax': 0.1
-            })
+            system_config = get_base_config(
+                nx.to_numpy_matrix(graph), Bvec, omega)
 
             systs[-1].append(DW({
                 'graph': graph,
@@ -150,7 +155,8 @@ def main(reps_per_config=50):
             err_A, err_B = compute_error(res)
 
             df = df.append([
-                {'graph_property': prange[i], 'parameter': 'A', 'relative_error': err_A}, {'graph_property': prange[i], 'parameter': 'B', 'relative_error': err_B}
+                {'graph_property': prange[i], 'parameter': 'A', 'relative_error': err_A},
+                {'graph_property': prange[i], 'parameter': 'B', 'relative_error': err_B}
             ], ignore_index=True)
         df.to_pickle('df.bak')
 
