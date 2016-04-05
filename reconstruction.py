@@ -98,6 +98,43 @@ def plot_errors(df):
     sns.boxplot(x='graph_property', y='relative_error', hue='parameter', data=df)
     save(fig, 'reconstruction_error')
 
+def compare_solution(res):
+    """ Compare solution from original and reconstructed parameters
+    """
+    # configure comparison
+    omega = 0.5
+
+    orig_conf = get_base_config(res.A.orig, res.B.orig, omega)
+    rec_conf = get_base_config(res.A.rec, res.B.rec, omega)
+
+    init = np.random.uniform(0, 2*np.pi, size=orig_conf.o_vec.shape)
+
+    # solve systems
+    orig_sols, ots = solve_system(orig_conf, init=init)
+    rec_sols, rts = solve_system(rec_conf, init=init)
+    assert (ots == rts).all()
+
+    # aggregate data
+    df = pd.DataFrame()
+    for orig_slice, rec_slice, t in zip(orig_sols.T, rec_sols.T, rts):
+        for i, (orig_val, rec_val) in enumerate(zip(orig_slice, rec_slice)):
+            df = df.append([
+                {'time': t, 'theta': orig_val, 'oscillator': i, 'source': 'orig'},
+                {'time': t, 'theta': rec_val, 'oscillator': i, 'source': 'rec'}
+            ], ignore_index=True)
+
+    # plot result
+    fig = plt.figure()
+
+    sns.tsplot(
+        time='time', value='theta',
+        unit='source', condition='oscillator',
+        estimator=np.mean,
+        data=df)
+    plt.title(r'$A_{{err}} = {}, B_{{err}} = {}$'.format(*compute_error(res)))
+
+    save(fig, 'solution_comparison')
+
 def main(reps_per_config=50):
     """ General interface
     """
@@ -109,6 +146,7 @@ def main(reps_per_config=50):
         for _ in trange(reps_per_config, nested=True):
             res = process(bundle_pack)
 
+            #compare_solution(res)
             err_A, err_B = compute_error(res)
 
             df = df.append([
