@@ -35,10 +35,14 @@ def plot_matrix(mat, ax, title=None, allow_negative=True):
 def plot_graph(graph, ax):
     """ Plot graph
     """
-    # generate some node properties
-    labels = {}
+    # generate some node/edge properties
+    node_labels = {}
     for n in graph.nodes():
-        labels[n] = n
+        node_labels[n] = n
+
+    edge_labels = {}
+    for source, sink, data in graph.edges(data=True):
+        edge_labels[(source, sink)] = round(data['weight'], 2)
 
     # compute layout
     pos = nx.nx_pydot.graphviz_layout(graph, prog='neato')
@@ -49,7 +53,8 @@ def plot_graph(graph, ax):
         node_color='lightskyblue', node_size=800,
         font_size=20,
         ax=ax)
-    nx.draw_networkx_labels(graph, pos, labels)
+    nx.draw_networkx_labels(graph, pos, node_labels)
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels)
 
 def plot_evolutions(sols, ts, ax):
     """ Plot system evolution

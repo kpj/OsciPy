@@ -3,6 +3,7 @@ All graph generators
 """
 
 import networkx as nx
+import numpy as np
 
 
 def generate_graph(size):
@@ -34,8 +35,8 @@ def generate_ring_graph(size):
     graph = nx.Graph()
 
     for i in range(size-1):
-        graph.add_edge(i, i+1)
-    graph.add_edge(size-1, 0)
+        graph.add_edge(i, i+1, weight=np.random.uniform(0.5, 3))
+    graph.add_edge(size-1, 0, weight=np.random.uniform(0.5, 3))
 
     return graph
 
