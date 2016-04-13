@@ -194,7 +194,7 @@ def investigate_graph_influence(reps_per_config=50):
 
     plot_errors(df)
 
-def investigate_skip_influence(reps_per_config=50):
+def investigate_skip_influence(max_skip=100, reps_per_config=50):
     """ Investigate how number of skipped entries influence reconstruction accuracy
     """
     # setup network
@@ -213,7 +213,7 @@ def investigate_skip_influence(reps_per_config=50):
 
     # generate data
     df = pd.DataFrame(columns=['skip', 'parameter', 'relative_error'])
-    for i in tqdm(range(1, 30)):
+    for i in tqdm(range(1, max_skip)):
         for _ in trange(reps_per_config, nested=True):
             res = process([syst], skipper=i)
             err_A, err_B = compute_error(res)
