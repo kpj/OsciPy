@@ -225,7 +225,10 @@ def investigate_skip_influence(max_skip=100, reps_per_config=50):
 
     # plot result
     fig = plt.figure(figsize=(12,6))
+
     sns.boxplot(x='skip', y='relative_error', hue='parameter', data=df)
+    plt.xticks(rotation=90, fontsize=6)
+
     save(fig, 'reconstruction_skip')
 
 def main():
