@@ -172,8 +172,8 @@ def plot_reconstruction_result(res):
     plt.tight_layout()
     save(fig, 'reconstruction_overview')
 
-def main(reps_per_config=50):
-    """ General interface
+def investigate_graph_influence(reps_per_config=50):
+    """ Investigate influence of graph details on reconstruction error
     """
     systems, prange = generate_systems()
 
@@ -193,6 +193,46 @@ def main(reps_per_config=50):
         df.to_pickle('df.bak')
 
     plot_errors(df)
+
+def investigate_skip_influence(reps_per_config=50):
+    """ Investigate how number of skipped entries influence reconstruction accuracy
+    """
+    # setup network
+    graph = generate_ring_graph(3)
+
+    dim = len(graph.nodes())
+    Bvec = np.random.uniform(0, 5, size=dim)
+    omega = np.random.uniform(0, 5, size=dim)
+
+    system_config = get_base_config(nx.to_numpy_matrix(graph), Bvec, omega)
+
+    syst = DW({
+        'graph': graph,
+        'system_config': system_config
+    })
+
+    # generate data
+    df = pd.DataFrame(columns=['skip', 'parameter', 'relative_error'])
+    for i in tqdm(range(1, 30)):
+        for _ in trange(reps_per_config, nested=True):
+            res = process([syst], skipper=i)
+            err_A, err_B = compute_error(res)
+
+            df = df.append([
+                {'skip': i, 'parameter': 'A', 'relative_error': err_A},
+                {'skip': i, 'parameter': 'B', 'relative_error': err_B}
+            ], ignore_index=True)
+
+    # plot result
+    fig = plt.figure(figsize=(12,6))
+    sns.boxplot(x='skip', y='relative_error', hue='parameter', data=df)
+    save(fig, 'reconstruction_skip')
+
+def main():
+    """ General interface
+    """
+    investigate_graph_influence()
+    investigate_skip_influence()
 
 
 if __name__ == '__main__':
