@@ -61,7 +61,12 @@ def generate_systems(prop_step=5, o_size=20):
 
     return systs, para_range
 
-def process(bundle_pack, reps=10):
+def reduce_information_content(sols, ts, step=1):
+    """ Remove assumption of perfect knowledge of system evolution
+    """
+    return sols.T[::step].T, ts[::step]
+
+def process(bundle_pack, reps=10, skipper=1):
     """ Solve system bundle and return data
     """
     # assemble final bundle from pack
@@ -72,6 +77,8 @@ def process(bundle_pack, reps=10):
         all_sols = []
         for _ in range(reps):
             sols, ts = solve_system(bundle.system_config, force_mod=False)
+            sols, ts = reduce_information_content(sols, ts, step=skipper)
+
             all_sols.append(sols)
         data.append((bundle.system_config, all_sols))
 
@@ -82,7 +89,8 @@ def process(bundle_pack, reps=10):
             'B': repr_bundle.system_config.B,
             'Phi': repr_bundle.system_config.Phi,
             'dt': repr_bundle.system_config.dt,
-            'ts': ts
+            'ts': ts,
+            'skip': skipper
         }), data, verbose=False)
 
     return DW({

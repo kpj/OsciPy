@@ -127,7 +127,7 @@ def reconstruct_coupling_params(conf, data, verbose=True):
                 rhs.append(row)
 
             # solution vector
-            theta_dot = (theta_nex[i] - theta[i]) / conf.dt
+            theta_dot = (theta_nex[i] - theta[i]) / (conf.skip * conf.dt)
             if append_check:
                 lhs.append(theta_dot - o_vec[i])
 
