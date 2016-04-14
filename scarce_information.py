@@ -14,7 +14,7 @@ import matplotlib.pylab as plt
 
 def find_tpi_crossings(series):
     """
-    Find indices where time series wraps from 2pi back to 0
+    Find indices where time series wraps from 2pi back to 0.
 
     Arguments:
         series
@@ -108,7 +108,7 @@ class System(object):
     @staticmethod
     def extract_phase_differences(sols, ts, driver, t_threshold):
         """
-        Extract phase difference of each oscillator to driving force in locked state
+        Extract phase difference of each oscillator to driving force in locked state.
 
         Arguments:
             sols
@@ -143,6 +143,8 @@ class System(object):
             for i in idxs:
                 if ext_flash_idx < i: continue
                 diffs.append(ext_flash_idx - i)
+
+            assert len(diffs) > 0, 'No element in {} smaller than {}'.format(idxs, ext_flash_idx)
             phase_diffs.append(min(diffs))
 
         # convert index difference to actual time differences
@@ -185,26 +187,155 @@ class System(object):
             data=df)
         plt.show()
 
+class Reconstructor(object):
+    """
+    Reconstruct system parameters from evolution observations
+    """
+    def __init__(self, ts, data):
+        """
+        Initialize reconstruction process.
+
+        Arguments
+            ts
+                List of time points of the simulation
+            data
+                List of (OMEGA, [phase differences]) pairs
+        """
+        self._ts = ts
+        self._data = data
+
+        pdiffs = data[0][1]
+        self._graph_shape = (len(pdiffs), len(pdiffs))
+
+    @property
+    def ts(self):
+        return self._ts
+
+    @property
+    def data(self):
+        return self._data
+
+    def _mat_to_flat(self, mat):
+        """
+        Convert matrix to flat version without diagonal entries.
+
+        Arguments:
+            mat
+                Matrix to be flattened
+        """
+        # find indices of entries which are not on the diagonal
+        gsize = self._graph_shape[0]**2
+        nondiag_inds = np.where(
+            np.arange(gsize) % (self._graph_shape[0]+1) != 0)
+
+        return mat.reshape(gsize)[nondiag_inds]
+
+    def _flat_to_mat(self, flat, repl=0):
+        """
+        Convert flat version to matrix and reinsert diagonal elements.
+
+        Arguments:
+            flat
+                Flat list to be converted
+            repl
+                Scalar to be inserted into diagonal
+        """
+        # find indices of entries which are on the diagonal
+        gsize = self._graph_shape[0]**2
+        diag_inds = np.where(
+            np.arange(gsize) % (self._graph_shape[0]+1) == 0)
+
+        # insert
+        for i in diag_inds[0]:
+            flat = np.insert(flat, i, repl)
+
+        return flat.reshape(self._graph_shape)
+
+    def _compute_A(self, i, phase_diffs):
+        """
+        Compute flat representation of coupling terms
+        """
+        coeffs_A = np.zeros(self._graph_shape)
+
+        tmp = np.reshape(phase_diffs, (len(phase_diffs), 1))
+        coeffs_A[i,:] = np.sin(tmp.transpose() - tmp)[i,:]
+
+        return self._mat_to_flat(coeffs_A)
+
+    def _compute_B(self, i, phase_diffs):
+        """
+        Compute terms of external force coupling
+        """
+        coeffs_B = np.zeros(self._graph_shape[0])
+        coeffs_B[i] = np.sin(-phase_diffs[i])
+
+        return coeffs_B
+
+    def reconstruct(self):
+        """
+        Reconstruct parameters from provided data
+        """
+        # assemble linear system
+        rhs = []
+        lhs = []
+        for OMEGA, phase_diffs in self.data:
+            for i in range(len(phase_diffs)):
+                # coefficient matrix
+                flat_A = self._compute_A(i, phase_diffs)
+                flat_B = self._compute_B(i, phase_diffs)
+
+                row = flat_A.tolist() + flat_B.tolist()
+                rhs.append(row)
+
+                # solution vector
+                theta_dot = OMEGA
+                lhs.append(theta_dot)
+
+        # solve system
+        x = np.linalg.lstsq(rhs, lhs)[0]
+
+        # extract reconstructed parameters from solution
+        rec_a = self._flat_to_mat(x[:-self._graph_shape[0]])
+        rec_b = x[-self._graph_shape[0]:]
+
+        print('Reconstructed A:\n', rec_a)
+        print('Reconstructed B:', rec_b)
+
+        return rec_a, rec_b
+
 
 def main():
     """
     Main interface
     """
+    # generate basis of system
     graph = nx.cycle_graph(4)
     dim = len(graph.nodes())
 
     A = nx.to_numpy_matrix(graph)
     B = np.random.uniform(0, 5, size=dim)
 
+    print('Original A:\n', A)
+    print('Original B:', B)
+    print()
+
     omega = np.random.uniform(0, 3)
-    OMEGA = 3
+    OMEGA_list = range(3, 6)
 
-    syst = System(A, B, omega, OMEGA)
-    sols, ts = syst.solve(0.01, 20)
+    # generate solutions
+    data = []
+    for OMEGA in OMEGA_list:
+        syst = System(A, B, omega, OMEGA)
+        sols, ts = syst.solve(0.01, 20)
 
-    pdiffs = System.extract_phase_differences(sols, ts, syst.Phi, 15)
-    print(pdiffs)
-    System.plot_solution(sols, ts)
+        pdiffs = System.extract_phase_differences(sols, ts, syst.Phi, 15)
+        #System.plot_solution(sols, ts)
+
+        data.append((OMEGA, pdiffs))
+
+    # reconstruct parameters
+    recon = Reconstructor(ts, data)
+    res = recon.reconstruct()
 
 if __name__ == '__main__':
     main()
