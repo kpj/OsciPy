@@ -22,7 +22,7 @@ def find_tpi_crossings(series):
     """
     idx = []
     for i in range(len(series)-1):
-        if series[i] > np.pi and series[i+1] < np.pi:
+        if series[i] > 3/2*np.pi and series[i+1] < 1/2*np.pi:
             idx.append(i)
     return idx
 
@@ -74,8 +74,6 @@ class System(object):
         """
         Generate ODE system
         """
-        Phi = self.Phi
-
         def func(theta, t=0):
             ode = []
             for i, omega in enumerate(self.omegas):
@@ -83,7 +81,7 @@ class System(object):
                     omega \
                     + np.sum([self.A[i,j] * np.sin(theta[j] - theta[i])
                         for j in range(len(self.omegas))]) \
-                    + self.B[i] * np.sin(Phi(t) - theta[i])
+                    + self.B[i] * np.sin(self.Phi(t) - theta[i])
                 )
             return np.array(ode)
         return func
@@ -128,12 +126,12 @@ class System(object):
 
         # find driver's phase
         driver_theta = driver(ts[cutoff_idx:])
-        driver_idx = find_tpi_crossings(driver_theta%2*np.pi)
+        driver_idx = find_tpi_crossings(driver_theta%(2*np.pi))
 
         # find oscillators phases
         osci_idx = []
         for sol in sols:
-            flashes = find_tpi_crossings(sol%2*np.pi)
+            flashes = find_tpi_crossings(sol%(2*np.pi))
             osci_idx.append(flashes)
 
         # compute smallest oscillator phase difference to last external flash
