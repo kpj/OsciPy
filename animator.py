@@ -19,16 +19,19 @@ class Animator(object):
     """
     Generate animated GIF of oscillator behavior
     """
-    def __init__(self, sols, ts):
+    def __init__(self, driver_sol, sols, ts):
         """
         Initialize animator.
 
         Arguments:
+            driver_sol
+                Solution of the external driver
             sols
                 Solutions of individual oscillators
             ts
                 List of time points
         """
+        self.driver_sol = driver_sol
         self.sols = sols
         self.ts = ts
 
@@ -42,7 +45,8 @@ class Animator(object):
         Prepare graph
         """
         self.graph = nx.Graph()
-        self.graph.add_nodes_from(i for i in range(len(self.sols)))
+        self.graph.add_nodes_from(i+1 for i in range(len(self.sols)))
+        self.graph.add_node(0) # external driver
 
         self.pos = nx.nx_pydot.graphviz_layout(self.graph, prog='neato')
 
@@ -63,6 +67,16 @@ class Animator(object):
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
+    def _parse_theta(self, theta):
+        """
+        Convert given theta to an alpha-channel representation.
+
+        Arguments
+            theta
+                Oscillator state
+        """
+        return theta / (2*np.pi)
+
     def _get_alpha_mapping(self, t):
         """
         Generate alpha channel mapping for current point in time.
@@ -72,11 +86,17 @@ class Animator(object):
                 Index of current time point
         """
         amap = {}
+
+        # oscillators
         for node in self.graph.nodes():
-            sol = self.sols[node]
+            sol = self.sols[node-1]
             val = sol[t]
 
-            amap[node] = val / (2*np.pi)
+            amap[node] = self._parse_theta(val)
+
+        # driver
+        amap[0] = self._parse_theta(self.driver_sol[t])
+
         return amap
 
     def _update(self, t, ax, pbar):
@@ -96,11 +116,15 @@ class Animator(object):
 
         alpha_map = self._get_alpha_mapping(t)
         for node, alpha in alpha_map.items():
+            if node == 0:
+                nsize = 800*5
+            else:
+                nsize = 800
+
             nx.draw_networkx_nodes(
                 self.graph, self.pos,
-                nodelist=[node],
-                node_color='yellow', node_size=800,
-                font_size=20, alpha=alpha,
+                nodelist=[node], alpha=alpha,
+                node_color='yellow', node_size=nsize,
                 ax=ax)
 
         self._clear_axis(ax)
@@ -161,11 +185,15 @@ def main():
     """
     syst = get_basic_system()
     sols, ts = syst.solve(0.01, 20)
+    driver_sol = syst.Phi(ts)
 
     step = 10
-    sols, ts = sols.T[::step].T, ts[::step]
+    sols, ts, driver_sol = sols.T[::step].T, ts[::step], driver_sol[::step]
 
-    anim = Animator(sols % (2*np.pi), ts)
+    sols %= 2*np.pi
+    driver_sol %= 2*np.pi
+
+    anim = Animator(driver_sol, sols, ts)
     anim.create('network.gif')
 
 if __name__ == '__main__':
