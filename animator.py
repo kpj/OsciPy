@@ -50,7 +50,7 @@ class Animator(object):
 
         self.pos = nx.nx_pydot.graphviz_layout(self.graph, prog='neato')
 
-    def _clear_axis(self, ax):
+    def _prepare_axis(self, ax):
         """
         Prepare axis for drawing.
 
@@ -58,6 +58,9 @@ class Animator(object):
             ax
                 Axis to be prepared
         """
+        # clear previous drawings
+        ax.cla()
+
         # networkx turns this off by default
         plt.axis('on')
 
@@ -66,6 +69,9 @@ class Animator(object):
         ax.grid(b=False)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
+
+        # make it quadratic
+        ax.set_aspect('equal')
 
     def _parse_theta(self, theta):
         """
@@ -99,20 +105,17 @@ class Animator(object):
 
         return amap
 
-    def _update(self, t, ax, pbar):
+    def _plot_graph(self, t, ax):
         """
-        Draw each frame of the animation.
+        Visualize network.
 
         Arguments
             t
-                Frame index in animation
+                Index of current point in time
             ax
                 Axis to draw on
-            pbar
-                Progressbar handle
         """
-        pbar.update(1)
-        plt.cla()
+        self._prepare_axis(ax)
 
         alpha_map = self._get_alpha_mapping(t)
         for node, alpha in alpha_map.items():
@@ -127,8 +130,51 @@ class Animator(object):
                 node_color='yellow', node_size=nsize,
                 ax=ax)
 
-        self._clear_axis(ax)
-        ax.set_title(r'$t={:.2}$'.format(self.ts[t]))
+    def _plot_evolution(self, t, ax):
+        """
+        Visualize oscillator evolution.
+
+        Arguments
+            t
+                Index of current point in time
+            ax
+                Axis to draw on
+        """
+        for sol in self.sols:
+            ax.plot(
+                self.ts[:t], sol[:t],
+                color='blue', lw=0.3)
+
+        ax.plot(
+            self.ts[:t], self.driver_sol[:t],
+            color='black', lw=3)
+
+        ax.set_xlim((0, self.ts[-1]))
+        ax.set_ylim((0, 2*np.pi))
+
+    def _update(self, t, gs, pbar):
+        """
+        Draw each frame of the animation.
+
+        Arguments
+            t
+                Frame index in animation
+            gs
+                Gridspec to draw on
+            pbar
+                Progressbar handle
+        """
+        pbar.update(1)
+
+        plt.suptitle(r'$t={:.2f}$'.format(self.ts[t]))
+
+        # plot graph
+        gax = plt.subplot(gs[:2, :2])
+        self._plot_graph(t, gax)
+
+        # plot time evolution
+        tax = plt.subplot(gs[:2, 2:])
+        self._plot_evolution(t, tax)
 
     def _animate(self, fname):
         """
@@ -141,16 +187,16 @@ class Animator(object):
         if self.graph is None:
             raise RuntimeError('Graph not yet created')
 
-        fig = plt.figure()
-        ax = plt.gca()
+        fig = plt.figure(figsize=(10,5))
+        gs = mpl.gridspec.GridSpec(2, 5)
 
         with tqdm(total=len(self.ts)) as pbar:
             ani = animation.FuncAnimation(
                 fig, self._update,
                 frames=len(self.ts),
-                fargs=(ax, pbar))
+                fargs=(gs, pbar))
 
-        ani.save(fname, writer='imagemagick', fps=10, dpi=50) # 200
+        ani.save(fname, writer='imagemagick', fps=10, dpi=100) # 200
 
     def create(self, fname):
         """
