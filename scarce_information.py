@@ -147,25 +147,30 @@ class System(object):
             assert len(diffs) > 0, 'No element in {} smaller than {}'.format(idxs, ext_flash_idx)
             phase_diffs.append(min(diffs))
 
-        # convert index difference to actual time differences
+        # convert index differences to actual time differences
         ref_ind = cutoff_idx + ext_flash_idx
         t_diffs = [ts[ref_ind] - ts[ref_ind-pdiff] for pdiff in phase_diffs]
 
-        return t_diffs
+        return t_diffs, ts[ref_ind]
 
     @staticmethod
-    def plot_solution(sols, ts):
+    def plot_solution(driver_sol, sols, ts, phase_data):
         """
         Plot solution of oscillator system.
 
         Arguments:
+            driver_sol
+                Solution of external driver
             sols
                 List of system solutions
             ts
                 List of time points of the simulation
+            phase_data
+                Tuple of oscillator phase differences and corresponding driver reference time point
         """
         # confine to circular region
         sols %= 2*np.pi
+        driver_sol %= 2*np.pi
 
         # convert to DataFrame
         df = pd.DataFrame.from_dict([
@@ -179,12 +184,29 @@ class System(object):
                 for i, theta in enumerate(sol)
         ])
 
+        df = df.append(pd.DataFrame.from_dict([
+            {
+                'theta': theta,
+                'time': ts[i],
+                'oscillator': 'driver',
+                'source': 'raw'
+            }
+            for i, theta in enumerate(driver_sol)
+        ]))
+
         # plot result
         plt.figure()
+
         sns.tsplot(
             time='time', value='theta',
             condition='oscillator', unit='source',
             data=df)
+
+        pdiffs, ref_t = phase_data
+        plt.axvline(ref_t, color='black')
+        for diff in pdiffs:
+            plt.axvline(ref_t - diff, color='red', lw=0.5)
+
         plt.show()
 
 class Reconstructor(object):
@@ -328,8 +350,8 @@ def main():
         syst = System(A, B, omega, OMEGA)
         sols, ts = syst.solve(0.01, 20)
 
-        pdiffs = System.extract_phase_differences(sols, ts, syst.Phi, 15)
-        #System.plot_solution(sols, ts)
+        pdiffs, ref_time = System.extract_phase_differences(sols, ts, syst.Phi, 12)
+        #System.plot_solution(syst.Phi(ts), sols, ts, (pdiffs, ref_time))
 
         data.append((OMEGA, pdiffs))
 
