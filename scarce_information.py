@@ -11,6 +11,8 @@ from scipy.integrate import odeint
 import seaborn as sns
 import matplotlib.pylab as plt
 
+from tqdm import tqdm
+
 
 def find_tpi_crossings(series):
     """
@@ -106,7 +108,7 @@ class System(object):
         return sol, ts
 
     @staticmethod
-    def extract_phase_differences(sols, ts, driver, t_threshold):
+    def extract_phase_differences(sols, ts, driver):
         """
         Extract phase difference of each oscillator to driving force in locked state.
 
@@ -117,44 +119,24 @@ class System(object):
                 List of time points of the simulation
             driver
                 Function of driver of system
-            t_threshold
-                Time point after which oscillators are assumed to be locked
         """
-        # cut off transient
-        cutoff_idx = (np.abs(ts-t_threshold)).argmin()
-        sols = sols.T[cutoff_idx:].T
+        sols %= 2*np.pi
 
         # find driver's phase
-        driver_theta = driver(ts[cutoff_idx:])
-        driver_idx = find_tpi_crossings(driver_theta%(2*np.pi))
+        driver_theta = driver(ts) % (2*np.pi)
+        driver_idx = find_tpi_crossings(driver_theta)
 
-        # find oscillators phases
-        osci_idx = []
+        # compute phase differences
+        driver_ref = driver_theta[-1]
+
+        pdiffs = []
         for sol in sols:
-            flashes = find_tpi_crossings(sol%(2*np.pi))
-            osci_idx.append(flashes)
+            pdiffs.append(driver_ref - sol[-1])
 
-        # compute smallest oscillator phase difference to last external flash
-        ext_flash_idx = driver_idx[-1]
-
-        phase_diffs = []
-        for idxs in osci_idx:
-            diffs = []
-            for i in idxs:
-                if ext_flash_idx < i: continue
-                diffs.append(ext_flash_idx - i)
-
-            assert len(diffs) > 0, 'No element in {} smaller than {}'.format(idxs, ext_flash_idx)
-            phase_diffs.append(min(diffs))
-
-        # convert index differences to actual time differences
-        ref_ind = cutoff_idx + ext_flash_idx
-        t_diffs = [ts[ref_ind] - ts[ref_ind-pdiff] for pdiff in phase_diffs]
-
-        return t_diffs, ts[ref_ind]
+        return pdiffs
 
     @staticmethod
-    def plot_solution(driver_sol, sols, ts, phase_data):
+    def plot_solution(driver_sol, sols, ts):
         """
         Plot solution of oscillator system.
 
@@ -165,8 +147,6 @@ class System(object):
                 List of system solutions
             ts
                 List of time points of the simulation
-            phase_data
-                Tuple of oscillator phase differences and corresponding driver reference time point
         """
         # confine to circular region
         sols %= 2*np.pi
@@ -201,11 +181,6 @@ class System(object):
             time='time', value='theta',
             condition='oscillator', unit='source',
             data=df)
-
-        pdiffs, ref_t = phase_data
-        plt.axvline(ref_t, color='black')
-        for diff in pdiffs:
-            plt.axvline(ref_t - diff, color='red', lw=0.5)
 
         plt.show()
 
