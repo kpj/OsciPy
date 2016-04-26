@@ -316,10 +316,9 @@ def main():
 
     print('Original A:\n', A)
     print('Original B:', B)
-    print()
 
-    omega = np.random.uniform(0, 3)
-    OMEGA_list = range(3, 6)
+    omega = 2
+    OMEGA_list = np.arange(2.2, 3, 0.2)
 
     # generate solutions
     data = []
