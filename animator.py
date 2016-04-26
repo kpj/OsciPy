@@ -81,7 +81,7 @@ class Animator(object):
             theta
                 Oscillator state
         """
-        return np.exp(-theta * 8)
+        return np.exp(-theta * 3)
 
     def _get_alpha_mapping(self, t):
         """
@@ -169,12 +169,12 @@ class Animator(object):
         plt.suptitle(r'$t={:.2f}$'.format(self.ts[t]))
 
         # plot graph
-        gax = plt.subplot(gs[:2, :2])
+        gax = plt.subplot(gs[:]) #[:2, :2]
         self._plot_graph(t, gax)
 
         # plot time evolution
-        tax = plt.subplot(gs[:2, 2:])
-        self._plot_evolution(t, tax)
+        #tax = plt.subplot(gs[:2, 2:])
+        #self._plot_evolution(t, tax)
 
     def _animate(self, fname):
         """
@@ -188,7 +188,7 @@ class Animator(object):
             raise RuntimeError('Graph not yet created')
 
         fig = plt.figure(figsize=(10,5))
-        gs = mpl.gridspec.GridSpec(2, 5)
+        gs = mpl.gridspec.GridSpec(1, 1) #2, 5
 
         with tqdm(total=len(self.ts)) as pbar:
             ani = animation.FuncAnimation(
