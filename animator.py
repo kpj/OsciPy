@@ -81,7 +81,7 @@ class Animator(object):
             theta
                 Oscillator state
         """
-        return theta / (2*np.pi)
+        return np.exp(-theta * 8)
 
     def _get_alpha_mapping(self, t):
         """
