@@ -255,7 +255,7 @@ class Reconstructor(object):
         coeffs_A = np.zeros(self._graph_shape)
 
         tmp = np.reshape(phase_diffs, (len(phase_diffs), 1))
-        coeffs_A[i,:] = np.sin(tmp.transpose() - tmp)[i,:]
+        coeffs_A[i,:] = np.sin(tmp - tmp.transpose())[i,:]
 
         return self._mat_to_flat(coeffs_A)
 
@@ -264,7 +264,7 @@ class Reconstructor(object):
         Compute terms of external force coupling
         """
         coeffs_B = np.zeros(self._graph_shape[0])
-        coeffs_B[i] = np.sin(-phase_diffs[i])
+        coeffs_B[i] = np.sin(phase_diffs[i])
 
         return coeffs_B
 
@@ -275,7 +275,7 @@ class Reconstructor(object):
         # assemble linear system
         rhs = []
         lhs = []
-        for OMEGA, phase_diffs in self.data:
+        for (OMEGA, omega), phase_diffs in tqdm(self.data):
             for i in range(len(phase_diffs)):
                 # coefficient matrix
                 flat_A = self._compute_A(i, phase_diffs)
@@ -285,8 +285,10 @@ class Reconstructor(object):
                 rhs.append(row)
 
                 # solution vector
-                theta_dot = OMEGA
+                theta_dot = OMEGA - omega
                 lhs.append(theta_dot)
+
+        print('Using', len(rhs), 'data points to solve system of', self._graph_shape[0]**2, 'variables')
 
         # solve system
         x = np.linalg.lstsq(rhs, lhs)[0]
@@ -321,14 +323,14 @@ def main():
 
     # generate solutions
     data = []
-    for OMEGA in OMEGA_list:
+    for OMEGA in tqdm(OMEGA_list):
         syst = System(A, B, omega, OMEGA)
         sols, ts = syst.solve(0.01, 20)
 
-        pdiffs, ref_time = System.extract_phase_differences(sols, ts, syst.Phi, 12)
-        #System.plot_solution(syst.Phi(ts), sols, ts, (pdiffs, ref_time))
+        pdiffs = System.extract_phase_differences(sols, ts, syst.Phi)
+        #System.plot_solution(syst.Phi(ts), sols, ts)
 
-        data.append((OMEGA, pdiffs))
+        data.append(((OMEGA, omega), pdiffs))
 
     # reconstruct parameters
     recon = Reconstructor(ts, data)
