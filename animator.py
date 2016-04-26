@@ -13,7 +13,7 @@ import matplotlib.animation as animation
 
 from tqdm import tqdm
 
-from scarce_information import System
+from system import System
 
 class Animator(object):
     """
