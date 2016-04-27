@@ -7,6 +7,20 @@ import numpy as np
 from tqdm import tqdm
 
 
+def compute_error(bundle):
+    """
+    Compute relative error of reconstruction.
+
+    Arguments
+        bundle
+            Dict of original and reconstructed data
+    """
+    idx = np.nonzero(bundle.orig_A)
+    rel_err_A = np.power((bundle.orig_A[idx] - bundle.rec_A[idx]) / bundle.orig_A[idx], 2)
+    rel_err_B = np.power((bundle.orig_B - bundle.rec_B) / bundle.orig_B, 2)
+
+    return np.mean(rel_err_A), np.mean(rel_err_B)
+
 def find_tpi_crossings(series):
     """
     Find indices where time series wraps from 2pi back to 0.

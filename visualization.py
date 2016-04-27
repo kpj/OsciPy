@@ -7,6 +7,8 @@ import networkx as nx
 import matplotlib as mpl
 import matplotlib.pylab as plt
 
+from reconstruction import compute_error
+
 
 def plot_graph(A, B, ax):
     """
@@ -88,6 +90,9 @@ def show_reconstruction_overview(syst, bundle):
     """
     fig = plt.figure(figsize=(32, 8))
     gs = mpl.gridspec.GridSpec(1, 2)
+
+    err_A, err_B = compute_error(bundle)
+    plt.suptitle(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(err_A, err_B))
 
     # original graph
     orig_ax = plt.subplot(gs[0])
