@@ -6,8 +6,6 @@ import numpy as np
 import networkx as nx
 
 import matplotlib as mpl
-mpl.use('Agg', force=True)
-
 import matplotlib.pylab as plt
 import matplotlib.animation as animation
 
@@ -69,9 +67,6 @@ class Animator(object):
         ax.grid(b=False)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-
-        # make it quadratic
-        ax.set_aspect('equal')
 
     def _parse_theta(self, theta):
         """
@@ -187,7 +182,7 @@ class Animator(object):
         if self.graph is None:
             raise RuntimeError('Graph not yet created')
 
-        fig = plt.figure(figsize=(10,5))
+        fig = plt.figure(figsize=(10,10))
         gs = mpl.gridspec.GridSpec(1, 1) #2, 5
 
         with tqdm(total=len(self.ts)) as pbar:
@@ -196,7 +191,7 @@ class Animator(object):
                 frames=len(self.ts),
                 fargs=(gs, pbar))
 
-        ani.save(fname, writer='imagemagick', fps=10, dpi=100) # 200
+            ani.save(fname, writer='imagemagick', fps=10, dpi=100) # 200
 
     def create(self, fname):
         """
@@ -214,7 +209,7 @@ def get_basic_system():
     """
     Generate simple exemplary system
     """
-    graph = nx.cycle_graph(4)
+    graph = nx.cycle_graph(50)
     dim = len(graph.nodes())
 
     A = nx.to_numpy_matrix(graph)
@@ -230,7 +225,7 @@ def main():
     Exemplary usage
     """
     syst = get_basic_system()
-    sols, ts = syst.solve(0.01, 20)
+    sols, ts = syst.solve(0.01, 10)
     driver_sol = syst.Phi(ts)
 
     step = 10
