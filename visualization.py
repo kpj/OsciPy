@@ -26,7 +26,8 @@ def plot_graph(A, B, ax):
     graph.add_node('F', color='red')
 
     for i, b in enumerate(B):
-        graph.add_edge('F', i, weight=b, style='dashed')
+        if abs(b) > 1e-1:
+            graph.add_edge('F', i, weight=b, style='dashed')
 
     # generate some node/edge properties
     node_labels = {}
