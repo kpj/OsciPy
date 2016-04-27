@@ -108,7 +108,7 @@ def show_reconstruction_overview(syst, bundle):
 
     tmp = bundle.rec_A
     tmp[abs(tmp) < 1e-1] = 0
-    plot_graph(tmp, bundle.orig_B, rec_ax)
+    plot_graph(tmp, bundle.rec_B, rec_ax)
 
     # save plot
     plt.tight_layout()
