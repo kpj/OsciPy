@@ -1,11 +1,15 @@
 """
-Analytically investigate stability of oscillator system
+Analytically investigate stability of oscillator system.
+
+Convert images to gif: convert -delay 100 -loop 0 *.png animation.gif
 """
 
 import numpy as np
 from scipy.integrate import odeint
 
 import matplotlib.pylab as plt
+
+from tqdm import tqdm
 
 from reconstruction import find_tpi_crossings
 
@@ -78,7 +82,8 @@ class StabilityInvestigator(object):
             levels=[0], linewidths=2, colors='black')
         plt.contour(
             x_mesh, y_mesh, ode_y,
-            levels=[0], linewidths=2, colors='black')
+            levels=[0], linewidths=2, colors='black',
+            linestyles='dashed')
 
     def _plot_trajectories(self, initial_conds):
         """
@@ -108,12 +113,12 @@ class StabilityInvestigator(object):
             lbl = None
 
 
-        #p0, p1 = np.load('pdiffs.npy') % self.max_val
-        #p0 = fix_wrapping(p0)
-        #p1 = fix_wrapping(p1)
-        #plt.plot(p0, p1, linewidth=3, label=r'$\Theta$ ODE trajectory')
+        p0, p1 = np.load('pdiffs.npy') % self.max_val
+        p0 = fix_wrapping(p0)
+        p1 = fix_wrapping(p1)
+        plt.plot(p0, p1, linewidth=3, label=r'$\Theta$ ODE trajectory')
 
-    def phase_space(self, resolution=200, initial_conds=[]):
+    def phase_space(self, resolution=200, initial_conds=[], fname_app=None):
         """
         Plot phase space of system.
 
@@ -127,14 +132,19 @@ class StabilityInvestigator(object):
 
         self._plot_vector_field(resolution/10)
         self._plot_nullclines(resolution)
-        self._plot_trajectories(initial_conds)
+        #self._plot_trajectories(initial_conds)
 
-        plt.legend(loc='best')
+        #plt.legend(loc='best')
         plt.xlabel(r'$\varphi_0$')
         plt.ylabel(r'$\varphi_1$')
-        plt.title('Phase plane')
+        plt.title(
+            'Phase plane{}'.format(
+                '' if fname_app is None else ' ({})'.format(fname_app)))
 
-        plt.savefig('images/phase_space.pdf')
+        plt.savefig(
+            'images/phase_space{}.png'.format(
+                '' if fname_app is None else '_{:04}'.format(fname_app)))
+        plt.close()
 
 def generate_ode(OMEGA=4, omega=2, A=1, B=2):
     """
@@ -154,10 +164,14 @@ def main():
     """
     Main interface
     """
-    func = generate_ode()
-    stabi = StabilityInvestigator(func)
+    Os = np.linspace(0, 5, 200)
+    for i, O in enumerate(tqdm(Os)):
+        func = generate_ode(OMEGA=O)
+        stabi = StabilityInvestigator(func)
 
-    stabi.phase_space(initial_conds=[[2,1], [2,4], [4,1]])
+        stabi.phase_space(
+            initial_conds=[[2,1], [2,4], [4,1]],
+            fname_app=i)
 
 if __name__ == '__main__':
     main()
