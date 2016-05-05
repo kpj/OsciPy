@@ -15,11 +15,10 @@ def compute_error(bundle):
         bundle
             Dict of original and reconstructed data
     """
-    idx = np.nonzero(bundle.orig_A)
-    rel_err_A = np.power((bundle.orig_A[idx] - bundle.rec_A[idx]) / bundle.orig_A[idx], 2)
-    rel_err_B = np.power((bundle.orig_B - bundle.rec_B) / bundle.orig_B, 2)
+    rel_err_A = abs(bundle.orig_A - bundle.rec_A) / (1 + abs(bundle.orig_A))
+    rel_err_B = abs(bundle.orig_B - bundle.rec_B) / (1 + abs(bundle.orig_B))
 
-    return np.mean(rel_err_A), np.mean(rel_err_B)
+    return rel_err_A, rel_err_B
 
 def find_tpi_crossings(series):
     """

@@ -2,6 +2,7 @@
 Aggregate functions which handle plotting
 """
 
+import numpy as np
 import networkx as nx
 
 import matplotlib as mpl
@@ -10,7 +11,7 @@ import matplotlib.pylab as plt
 from reconstruction import compute_error
 
 
-def plot_graph(A, B, ax):
+def plot_graph(A, B, ax, bundle=None):
     """
     Plot graph on given axis.
 
@@ -21,6 +22,8 @@ def plot_graph(A, B, ax):
             Vector of coupling to external force
         ax
             Axis to plot on
+        bundle (optional)
+            If given, label edges with reconstruction error
     """
     graph = nx.from_numpy_matrix(A)
 
@@ -40,9 +43,22 @@ def plot_graph(A, B, ax):
     for n, data in graph.nodes(data=True):
         node_colors.append(data.get('color', 'lightskyblue'))
 
+    if not bundle is None:
+        err_A, err_B = compute_error(bundle)
+
     edge_labels = {}
     for source, sink, data in graph.edges(data=True):
-        edge_labels[(source, sink)] = round(data['weight'], 2)
+        if bundle is None:
+            edge_labels[(source, sink)] = round(data['weight'], 2)
+        else:
+            if sink == 'F':
+                edge_labels[(source, sink)] = round(err_B[source], 2)
+            else:
+                print(bundle.orig_A, err_A)
+                edge_labels[(source, sink)] = round(np.mean([
+                    err_A[source, sink],
+                    err_A[sink, source]
+                ]), 2)
 
     edge_style = []
     for source, sink, data in graph.edges(data=True):
@@ -92,7 +108,7 @@ def show_reconstruction_overview(syst, bundle):
     gs = mpl.gridspec.GridSpec(1, 2)
 
     err_A, err_B = compute_error(bundle)
-    plt.suptitle(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(err_A, err_B))
+    plt.suptitle(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(np.mean(err_A), np.mean(err_B)))
 
     # original graph
     orig_ax = plt.subplot(gs[0])
@@ -108,7 +124,7 @@ def show_reconstruction_overview(syst, bundle):
 
     tmp = bundle.rec_A
     tmp[abs(tmp) < 1e-1] = 0
-    plot_graph(tmp, bundle.rec_B, rec_ax)
+    plot_graph(tmp, bundle.rec_B, rec_ax, bundle=bundle)
 
     # save plot
     plt.tight_layout()
