@@ -167,7 +167,10 @@ class Reconstructor(object):
                 theta_dot = OMEGA - omega
                 lhs.append(theta_dot)
 
-        print('Using', len(rhs), 'data points to solve system of', self._graph_shape[0]**2, 'variables')
+        print('Using {} data points to solve system of {} variables (rank: {})'.format(
+            len(rhs),
+            self._graph_shape[0]**2,
+            np.linalg.matrix_rank(rhs)))
 
         # solve system
         x = np.linalg.lstsq(rhs, lhs)[0]
