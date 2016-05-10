@@ -7,9 +7,11 @@ Convert images to gif: convert -delay 100 -loop 0 *.png animation.gif
 import numpy as np
 from scipy.integrate import odeint
 
-import matplotlib.pylab as plt
+from sympy import Symbol, symbols, sin, Matrix
+from sympy.utilities.lambdify import lambdify
+from sympy.solvers.solvers import nsolve
 
-from tqdm import tqdm
+import matplotlib.pylab as plt
 
 from reconstruction import find_tpi_crossings
 
@@ -146,32 +148,103 @@ class StabilityInvestigator(object):
                 '' if fname_app is None else '_{:04}'.format(fname_app)))
         plt.close()
 
+
+class Functions(object):
+    def __init__(self, N):
+        self.N = N
+
+        self.O = Symbol('Ω', real=True)
+        self.o = Symbol('ω', real=True)
+        self.A = Symbol('A', real=True)
+        self.B = Symbol('B', real=True)
+
+        self.phis = symbols('ϕ0:{}'.format(self.N), real=True)
+
+    def _gen_system(self):
+        syst = []
+        for i in range(self.N):
+            eq = self.O - self.o - sum([self.A * sin(self.phis[i] - self.phis[j]) for j in range(self.N) if i != j]) - self.B * sin(self.phis[i])
+            yield eq
+
+    def get_equations(self, substitutions):
+        eqs = []
+        for eq in self._gen_system():
+            for sym, val in substitutions.items():
+                eq = eq.subs(sym, val)
+            eqs.append(eq)
+        return eqs
+
+    def get_roots(self, eqs):
+        res = nsolve(eqs, self.phis, [1]*len(eqs), verify=False)#, modules=['numpy'])
+        return res
+
+    def get_jacobian(self, eqs, at=None):
+        jac = Matrix(eqs).jacobian(Matrix(self.phis))
+
+        if not at is None:
+            assert len(self.phis) == len(at)
+            for p, v in zip(self.phis, at):
+                jac = jac.subs(p, v)
+
+        return jac
+
+    def get_ode(self, eqs):
+        eqs = [lambdify(self.phis, e, 'numpy') for e in eqs]
+        def func(state, t=0):
+            return [e(*state) for e in eqs]
+        return func
+
+    @staticmethod
+    def is_stable(jac):
+        #print([N(k) for k in jac.eigenvals().keys()])
+        return (np.array([k for k in jac.eigenvals().keys()]) <= 0).all()
+
+    @staticmethod
+    def fixroot(root):
+        r = root.tolist()
+
+        out = []
+        for ele in r:
+            cur = ele[0]
+            if cur > np.pi:
+                out.append([cur-np.pi])
+            else:
+                out.append([cur])
+
+        return Matrix(out)
+
+    @staticmethod
+    def main():
+        f = Functions(1)
+        eqs = f.get_equations({f.O: 3.3, f.o: 2, f.B: 2, f.A: 1})
+        ode = f.get_ode(eqs)
+
+        root = Functions.fixroot(f.get_roots(eqs))
+        jac = f.get_jacobian(eqs, at=root)
+
+        print(root, jac)
+        print(Functions.is_stable(jac))
+
+
 def generate_ode(OMEGA=4, omega=2, A=1, B=2):
     """
     Generate ODE system
     """
-    def func(state, t=0):
-        phi_0, phi_1 = state
-
-        return np.array([
-            OMEGA - omega - A * np.sin(phi_0 - phi_1) - B * np.sin(phi_0),
-            OMEGA - omega - A * np.sin(phi_1 - phi_0) - B * np.sin(phi_1),
-        ])
-
-    return func
+    f = Functions(2)
+    eqs = f.get_equations()
+    return f.get_ode(eqs)
 
 def main():
     """
     Main interface
     """
-    Os = np.linspace(0, 5, 200)
-    for i, O in enumerate(tqdm(Os)):
-        func = generate_ode(OMEGA=O)
-        stabi = StabilityInvestigator(func)
+    func = generate_ode()
+    stabi = StabilityInvestigator(func)
 
-        stabi.phase_space(
-            initial_conds=[[2,1], [2,4], [4,1]],
-            fname_app=i)
+    stabi.phase_space(
+        initial_conds=[[2,1], [2,4], [4,1]])
 
 if __name__ == '__main__':
-    main()
+    #main()
+
+    Functions.main()
