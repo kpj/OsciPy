@@ -86,7 +86,13 @@ class Reconstructor(object):
 
         pdiffs = []
         for sol in sols:
-            pdiffs.append(driver_ref - sol[-1])
+            d = driver_ref - sol[-1]
+
+            # wrap d if necessary
+            if d < 0:
+                d = 2*np.pi + d
+
+            pdiffs.append(d)
 
         return pdiffs
 
