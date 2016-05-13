@@ -180,6 +180,10 @@ class Reconstructor(object):
         # solve system
         x = np.linalg.lstsq(rhs, lhs)[0]
 
+        evals = np.linalg.eigvals(np.array(rhs).T.dot(rhs))
+        cn = abs(max(evals) / min(evals))
+        print('Condition number:', cn, np.log10(cn))
+
         # extract reconstructed parameters from solution
         rec_A = self._flat_to_mat(x[:-self._graph_shape[0]])
         rec_B = x[-self._graph_shape[0]:]
