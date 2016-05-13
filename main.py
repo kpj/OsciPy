@@ -45,13 +45,23 @@ def main():
     # generate solutions
     data = []
     for OMEGA in tqdm(OMEGA_list):
-        syst = System(orig_A, orig_B, omega, OMEGA)
-        sols, ts = syst.solve(0.01, 20)
+        runs = []
+        for i in range(dim):
+            mask = np.ones(dim, dtype=bool)
+            mask[i] = 0
+            Bvec = orig_B.copy()
+            Bvec[mask] = 0
 
-        pdiffs = Reconstructor.extract_phase_differences(sols, ts, syst.Phi)
-        #System.plot_solution(syst.Phi(ts), sols, ts)
+            syst = System(orig_A, Bvec, omega, OMEGA)
+            sols, ts = syst.solve(0.01, 100)
 
-        data.append(((OMEGA, omega), pdiffs))
+            pdiffs = Reconstructor.extract_phase_differences(sols, ts, syst.Phi)
+            #print(pdiffs)
+            #System.plot_solution(syst.Phi(ts), sols, ts)
+
+            runs.append(pdiffs)
+
+        data.append(((OMEGA, omega), runs))
 
     # reconstruct parameters
     recon = Reconstructor(ts, data)

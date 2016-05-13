@@ -143,12 +143,14 @@ class Reconstructor(object):
 
         return self._mat_to_flat(coeffs_A)
 
-    def _compute_B(self, i, phase_diffs):
+    def _compute_B(self, i, phase_diffs, run_id):
         """
         Compute terms of external force coupling
         """
         coeffs_B = np.zeros(self._graph_shape[0])
-        coeffs_B[i] = np.sin(phase_diffs[i])
+
+        if i == run_id:
+            coeffs_B[i] = np.sin(phase_diffs[i])
 
         return coeffs_B
 
@@ -159,18 +161,19 @@ class Reconstructor(object):
         # assemble linear system
         rhs = []
         lhs = []
-        for (OMEGA, omega), phase_diffs in tqdm(self.data):
-            for i in range(len(phase_diffs)):
-                # coefficient matrix
-                flat_A = self._compute_A(i, phase_diffs)
-                flat_B = self._compute_B(i, phase_diffs)
+        for (OMEGA, omega), runs in tqdm(self.data):
+            for run_id, phase_diffs in enumerate(runs):
+                for i in range(len(phase_diffs)):
+                    # coefficient matrix
+                    flat_A = self._compute_A(i, phase_diffs)
+                    flat_B = self._compute_B(i, phase_diffs, run_id)
 
-                row = flat_A.tolist() + flat_B.tolist()
-                rhs.append(row)
+                    row = flat_A.tolist() + flat_B.tolist()
+                    rhs.append(row)
 
-                # solution vector
-                theta_dot = OMEGA - omega
-                lhs.append(theta_dot)
+                    # solution vector
+                    theta_dot = OMEGA - omega
+                    lhs.append(theta_dot)
 
         print('Using {} data points to solve system of {} variables (rank: {})'.format(
             len(rhs),
