@@ -181,10 +181,14 @@ class Functions(object):
         val = substitutions[self.As]
         if np.isscalar(val):
             substitutions[self.As] = val * np.ones((self.N,self.N))
+        else:
+            assert np.asarray(val).shape == (self.N, self.N), 'Invalid dimension of A: {}'.format(np.asarray(val).shape)
 
         val = substitutions[self.Bs]
         if np.isscalar(val):
             substitutions[self.Bs] = val * np.ones(self.N)
+        else:
+            assert np.asarray(val).shape == (self.N,), 'Invalid dimension of B: {}'.format(np.asarray(val).shape)
 
         # apply substitutions (in an ugly way)
         eqs = []
