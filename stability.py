@@ -7,7 +7,7 @@ Convert images to gif: convert -delay 100 -loop 0 *.png animation.gif
 import numpy as np
 from scipy.integrate import odeint
 
-from sympy import Symbol, symbols, sin, Matrix
+from sympy import Symbol, symbols, sin, Matrix, N, re
 from sympy.utilities.lambdify import lambdify
 from sympy.solvers.solvers import nsolve
 
@@ -155,28 +155,68 @@ class Functions(object):
 
         self.O = Symbol('Ω', real=True)
         self.o = Symbol('ω', real=True)
-        self.A = Symbol('A', real=True)
-        self.B = Symbol('B', real=True)
 
+        self.As = []
+        for i in range(self.N):
+            self.As.append([])
+            for j in range(self.N):
+                sym = Symbol('A{}{}'.format(i,j), real=True)
+                self.As[-1].append(sym)
+        self.As = tuple(tuple(x) for x in self.As)
+
+        self.Bs = symbols('B0:{}'.format(self.N), real=True)
         self.phis = symbols('ϕ0:{}'.format(self.N), real=True)
 
     def _gen_system(self):
         syst = []
         for i in range(self.N):
-            eq = self.O - self.o - sum([self.A * sin(self.phis[i] - self.phis[j]) for j in range(self.N) if i != j]) - self.B * sin(self.phis[i])
+            eq = self.O - self.o - \
+                sum([self.As[i][j] * sin(self.phis[i] - self.phis[j])
+                    for j in range(self.N) if i != j]) - \
+                self.Bs[i] * sin(self.phis[i])
             yield eq
 
     def get_equations(self, substitutions):
+        # scale up if necessary
+        val = substitutions[self.As]
+        if np.isscalar(val):
+            substitutions[self.As] = val * np.ones((self.N,self.N))
+
+        val = substitutions[self.Bs]
+        if np.isscalar(val):
+            substitutions[self.Bs] = val * np.ones(self.N)
+
+        # apply substitutions (in an ugly way)
         eqs = []
         for eq in self._gen_system():
             for sym, val in substitutions.items():
-                eq = eq.subs(sym, val)
+                if isinstance(sym, tuple):
+                    for ss, vv in zip(sym, val):
+                        if isinstance(ss, tuple):
+                            for s, v in zip(ss, vv):
+                                eq = eq.subs(s, v)
+                        else:
+                            eq = eq.subs(ss, vv)
+                else:
+                    eq = eq.subs(sym, val)
             eqs.append(eq)
         return eqs
 
-    def get_roots(self, eqs):
-        res = nsolve(eqs, self.phis, [1]*len(eqs), verify=False)#, modules=['numpy'])
-        return res
+    def get_roots(self, eqs, steps=2):
+        fix = lambda r: (r+2*np.pi) if r < 0 else r
+
+        domain = np.linspace(0, np.pi, steps)
+        space = np.meshgrid(*([domain]*self.N))
+        points = np.vstack(map(np.ravel, space)).T
+
+        roots = []
+        for init in points:
+            res = nsolve(eqs, self.phis, init.tolist(), verify=False)
+            root = [round(fix(r), 5) for r in res]
+
+            if root not in roots:
+                roots.append(root)
+        return roots
 
     def get_jacobian(self, eqs, at=None):
         jac = Matrix(eqs).jacobian(Matrix(self.phis))
@@ -195,35 +235,32 @@ class Functions(object):
         return func
 
     @staticmethod
-    def is_stable(jac):
-        #print([N(k) for k in jac.eigenvals().keys()])
-        return (np.array([k for k in jac.eigenvals().keys()]) <= 0).all()
+    def get_eigenvalues(jac):
+        return [N(k) for k in jac.eigenvals().keys()]
 
-    @staticmethod
-    def fixroot(root):
-        r = root.tolist()
+    def get_stable_root(self, eqs):
+        roots = self.get_roots(eqs)
 
-        out = []
-        for ele in r:
-            cur = ele[0]
-            if cur > np.pi:
-                out.append([cur-np.pi])
-            else:
-                out.append([cur])
+        data = []
+        for root in roots:
+            jac = self.get_jacobian(eqs, at=root)
+            eigvals = Functions.get_eigenvalues(jac)
 
-        return Matrix(out)
+            if all([re(e) < 0 for e in eigvals]):
+                data.append(root)
+
+        return data
 
     @staticmethod
     def main():
-        f = Functions(1)
-        eqs = f.get_equations({f.O: 3.3, f.o: 2, f.B: 2, f.A: 1})
+        f = Functions(3)
+        eqs = f.get_equations({
+            f.O: 3.5, f.o: 3,
+            f.Bs: [2,10,5],
+            f.As: [[0,1,0],[1,0,1],[0,1,0]]})
         ode = f.get_ode(eqs)
 
-        root = Functions.fixroot(f.get_roots(eqs))
-        jac = f.get_jacobian(eqs, at=root)
-
-        print(root, jac)
-        print(Functions.is_stable(jac))
+        print(f.get_stable_root(eqs))
 
 
 def generate_ode(OMEGA=4, omega=2, A=1, B=2):
