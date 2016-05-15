@@ -11,7 +11,9 @@ from sympy import Symbol, symbols, sin, Matrix, N, re
 from sympy.utilities.lambdify import lambdify
 from sympy.solvers.solvers import nsolve
 
+import seaborn as sns
 import matplotlib.pylab as plt
+import matplotlib.lines as mlines
 
 from reconstruction import find_tpi_crossings
 
@@ -87,6 +89,18 @@ class StabilityInvestigator(object):
             levels=[0], linewidths=2, colors='black',
             linestyles='dashed')
 
+        lblx = mlines.Line2D(
+            [], [],
+            color='black',
+            marker='', markersize=15,
+            label=r'$\dot\varphi_0=0$')
+        lbly = mlines.Line2D(
+            [], [],
+            color='black', linestyle='dashed',
+            marker='', markersize=15,
+            label=r'$\dot\varphi_1=0$')
+        plt.legend(handles=[lblx, lbly], loc='best')
+
     def _plot_trajectories(self, initial_conds):
         """
         Plot trajectories.
@@ -136,7 +150,6 @@ class StabilityInvestigator(object):
         self._plot_nullclines(resolution)
         #self._plot_trajectories(initial_conds)
 
-        #plt.legend(loc='best')
         plt.xlabel(r'$\varphi_0$')
         plt.ylabel(r'$\varphi_1$')
         plt.title(
@@ -144,7 +157,7 @@ class StabilityInvestigator(object):
                 '' if fname_app is None else ' ({})'.format(fname_app)))
 
         plt.savefig(
-            'images/phase_space{}.png'.format(
+            'images/phase_space{}.pdf'.format(
                 '' if fname_app is None else '_{:04}'.format(fname_app)))
         plt.close()
 
@@ -272,7 +285,12 @@ def generate_ode(OMEGA=4, omega=2, A=1, B=2):
     Generate ODE system
     """
     f = Functions(2)
-    eqs = f.get_equations()
+    eqs = f.get_equations({
+        f.O: OMEGA,
+        f.o: omega,
+        f.As: A,
+        f.Bs: B
+    })
     return f.get_ode(eqs)
 
 def main():
