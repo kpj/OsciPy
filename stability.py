@@ -4,6 +4,8 @@ Analytically investigate stability of oscillator system.
 Convert images to gif: convert -delay 100 -loop 0 *.png animation.gif
 """
 
+import itertools
+
 import numpy as np
 from scipy.integrate import odeint
 
@@ -14,6 +16,8 @@ from sympy.solvers.solvers import nsolve
 import seaborn as sns
 import matplotlib.pylab as plt
 import matplotlib.lines as mlines
+
+from tqdm import tqdm
 
 from reconstruction import find_tpi_crossings
 
@@ -222,11 +226,14 @@ class Functions(object):
 
         roots = []
         for init in points:
-            res = nsolve(eqs, self.phis, init.tolist(), verify=False)
-            root = [round(fix(r), 5) for r in res]
+            try:
+                res = nsolve(eqs, self.phis, init.tolist(), verify=False)
+                root = [round(fix(r), 5) for r in res]
 
-            if root not in roots:
-                roots.append(root)
+                if root not in roots:
+                    roots.append(root)
+            except:# ZeroDivisonError:
+                pass
         return roots
 
     def get_jacobian(self, eqs, at=None):
@@ -245,11 +252,7 @@ class Functions(object):
             return [e(*state) for e in eqs]
         return func
 
-    @staticmethod
-    def get_eigenvalues(jac):
-        return [N(k) for k in jac.eigenvals().keys()]
-
-    def get_stable_root(self, eqs):
+    def get_roots_plus(self, eqs):
         roots = self.get_roots(eqs)
 
         data = []
@@ -257,24 +260,71 @@ class Functions(object):
             jac = self.get_jacobian(eqs, at=root)
             eigvals = Functions.get_eigenvalues(jac)
 
-            if all([re(e) < 0 for e in eigvals]):
-                data.append(root)
+            data.append((root, [re(e) for e in eigvals]))
 
         return data
 
     @staticmethod
-    def main():
-        f = Functions(3)
-        eqs = f.get_equations({
-            f.O: 3.5, f.o: 3,
-            f.Bs: [2,10,5],
-            f.As: [[0,1,0],[1,0,1],[0,1,0]]})
-        ode = f.get_ode(eqs)
+    def get_eigenvalues(jac):
+        # expect only eigenvalues of multiplicity one
+        assert set(jac.eigenvals().values()) == set([1])
 
-        print(f.get_stable_root(eqs))
+        return sorted([N(k) for k in jac.eigenvals().keys()])
+
+    @staticmethod
+    def get_stable_root(rp_data):
+        return [(root, eigvals) for root, eigvals in rp_data
+            if all([re(e) < 0 for e in eigvals])]
+
+    @staticmethod
+    def main(dim=2, reps=50):
+        def gen(o=5, B=2):
+            data = [[] for _ in range(dim)]
+            for O in tqdm(np.linspace(0, 10, reps)):
+                f = Functions(dim)
+                eqs = f.get_equations({
+                    f.O: O, f.o: o,
+                    f.Bs: B,
+                    f.As: 1})
+                ode = f.get_ode(eqs)
+
+                roots_p = f.get_roots_plus(eqs)
+                stab = Functions.get_stable_root(roots_p)
+
+                if len(stab) > 0:
+                    for i, ev in enumerate(stab[0][1]):
+                        data[i].append((O, ev))
+            return data
+        # compute data
+        data = {
+            r'$\omega=5, B=2$': gen(),
+            r'$\omega=5, B=5$': gen(B=5)
+        }
+
+        # plot result
+        plt.figure()
+
+        used_lbls = set()
+        colors = itertools.cycle(['blue', 'green', 'red'])
+        for lbl, dat in data.items():
+            col = next(colors)
+            markers = itertools.cycle(['o', '*', 'D'])
+            for e_list in dat:
+                plt.plot(
+                    *zip(*e_list),
+                    marker=next(markers), linestyle='None', markersize=5,
+                    color=col,
+                    label=lbl if not lbl in used_lbls else None)
+                used_lbls.add(lbl)
+
+        plt.xlabel(r'$\Omega$')
+        plt.ylabel(r'$\lambda_i$')
+        plt.legend(loc='best')
+
+        plt.savefig('images/stability_overview.pdf')
 
 
-def generate_ode(OMEGA=4, omega=2, A=1, B=2):
+def generate_ode(OMEGA=4, omega=3, A=1, B=2):
     """
     Generate ODE system
     """
