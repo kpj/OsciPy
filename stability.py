@@ -128,12 +128,6 @@ class StabilityInvestigator(object):
             plt.plot(phi_0, phi_1, linewidth=3, label=lbl)
             lbl = None
 
-
-        p0, p1 = np.load('pdiffs.npy') % self.max_val
-        p0 = fix_wrapping(p0)
-        p1 = fix_wrapping(p1)
-        plt.plot(p0, p1, linewidth=3, label=r'$\Theta$ ODE trajectory')
-
     def phase_space(self, resolution=200, initial_conds=[], fname_app=None):
         """
         Plot phase space of system.
@@ -148,7 +142,7 @@ class StabilityInvestigator(object):
 
         self._plot_vector_field(resolution/10)
         self._plot_nullclines(resolution)
-        #self._plot_trajectories(initial_conds)
+        self._plot_trajectories(initial_conds)
 
         plt.xlabel(r'$\varphi_0$')
         plt.ylabel(r'$\varphi_1$')
