@@ -30,17 +30,20 @@ def main():
     Main interface
     """
     # generate basis of system
-    graph = nx.cycle_graph(4)
+    graph = nx.gnp_random_graph(10, 0.6)
     dim = len(graph.nodes())
 
     orig_A = nx.to_numpy_matrix(graph)
-    orig_B = np.random.uniform(0, 5, size=dim)
+    orig_B = np.random.uniform(10, 20, size=dim)
+
+    nz = np.nonzero(orig_A)
+    orig_A[nz] = np.random.uniform(0.5, 3, size=len(nz[0]))
 
     print('Original A:\n', orig_A)
     print('Original B:', orig_B)
 
-    omega = 2
-    OMEGA_list = np.arange(2.2, 3, 0.2)
+    omega = 3
+    OMEGA_list = [2.9,3.05,3.1,3.2]#np.arange(3.7, 4.3, 0.05)
 
     # generate solutions
     data = []

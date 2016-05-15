@@ -54,7 +54,6 @@ def plot_graph(A, B, ax, bundle=None):
             if sink == 'F':
                 edge_labels[(source, sink)] = round(err_B[source], 2)
             else:
-                print(bundle.orig_A, err_A)
                 edge_labels[(source, sink)] = round(np.mean([
                     err_A[source, sink],
                     err_A[sink, source]
