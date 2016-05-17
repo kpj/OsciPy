@@ -112,18 +112,19 @@ def show_reconstruction_overview(syst, bundle):
     err_A, err_B = compute_error(bundle)
     plt.suptitle(
         r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(
-            np.mean(err_A), np.mean(err_B)))
+            np.mean(err_A), np.mean(err_B)),
+        fontsize=24)
 
     # original graph
     orig_ax = plt.subplot(gs[0])
-    orig_ax.set_title('Original graph')
+    orig_ax.set_title('Original graph', fontsize=24)
     orig_ax.set_aspect('equal')
 
     plot_graph(bundle.orig_A, bundle.orig_B, orig_ax)
 
     # reconstructed graph
     rec_ax = plt.subplot(gs[1])
-    rec_ax.set_title('Reconstructed graph')
+    rec_ax.set_title('Reconstructed graph', fontsize=24)
     rec_ax.set_aspect('equal')
 
     tmp = bundle.rec_A
