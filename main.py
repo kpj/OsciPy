@@ -5,7 +5,7 @@ Investigate how to reconstruct parameters from scarce information
 import numpy as np
 import networkx as nx
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from system import System
 from reconstruction import Reconstructor
@@ -49,7 +49,7 @@ def main():
     data = []
     for OMEGA in tqdm(OMEGA_list):
         runs = []
-        for i in range(dim):
+        for i in trange(dim):
             mask = np.ones(dim, dtype=bool)
             mask[i] = 0
             Bvec = orig_B.copy()

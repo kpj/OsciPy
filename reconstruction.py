@@ -75,6 +75,20 @@ class Reconstructor(object):
             driver
                 Function of driver of system
         """
+        def get_diffs(idx):
+            driver_ref = driver_theta[idx]
+
+            pdiffs = []
+            for sol in sols:
+                d = driver_ref - sol[idx]
+
+                # wrap d if necessary
+                if d < 0:
+                    d = 2*np.pi + d
+
+                pdiffs.append(d)
+            return pdiffs
+
         sols %= 2*np.pi
 
         # find driver's phase
@@ -82,17 +96,13 @@ class Reconstructor(object):
         driver_idx = find_tpi_crossings(driver_theta)
 
         # compute phase differences
-        driver_ref = driver_theta[-1]
+        pdiffs = get_diffs(-1)
 
-        pdiffs = []
-        for sol in sols:
-            d = driver_ref - sol[-1]
-
-            # wrap d if necessary
-            if d < 0:
-                d = 2*np.pi + d
-
-            pdiffs.append(d)
+        # check for anomalies
+        diff_diffs = np.mean([abs(p-p_) for p,p_ in zip(pdiffs, get_diffs(-10))])
+        mdiff = abs(np.mean(diff_diffs))
+        if mdiff > 1e-6:
+            print('[WARNING] phase differences not in steady state ({:.2}). Expect failure of reconstruction.'.format(mdiff))
 
         return pdiffs
 
