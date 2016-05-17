@@ -72,7 +72,7 @@ def plot_graph(A, B, ax, bundle=None, verbose=True):
 
     nx.draw_networkx_nodes(
         graph, pos,
-        node_color=node_colors, node_size=800 if verbose else 400,
+        node_color=node_colors, node_size=800 if verbose else 200,
         font_size=20,
         ax=ax)
     if verbose:
@@ -90,13 +90,11 @@ def plot_graph(A, B, ax, bundle=None, verbose=True):
             edge_labels,
             ax=ax)
 
-def show_reconstruction_overview(syst, bundle):
+def show_reconstruction_overview(bundle, verbose=True):
     """
     Plot representation of reconstruction results.
 
     Arguments
-        syst
-            Exemplary system used for reconstruction
         orig_A
             Original matrix A
         orig_B
@@ -120,7 +118,7 @@ def show_reconstruction_overview(syst, bundle):
     orig_ax.set_title('Original graph', fontsize=24)
     orig_ax.set_aspect('equal')
 
-    plot_graph(bundle.orig_A, bundle.orig_B, orig_ax)
+    plot_graph(bundle.orig_A, bundle.orig_B, orig_ax, verbose=verbose)
 
     # reconstructed graph
     rec_ax = plt.subplot(gs[1])
@@ -129,7 +127,7 @@ def show_reconstruction_overview(syst, bundle):
 
     tmp = bundle.rec_A
     tmp[abs(tmp) < 1e-1] = 0
-    plot_graph(tmp, bundle.rec_B, rec_ax, bundle=bundle)
+    plot_graph(tmp, bundle.rec_B, rec_ax, bundle=bundle, verbose=verbose)
 
     # save plot
     plt.tight_layout()
