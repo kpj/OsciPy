@@ -11,7 +11,7 @@ import matplotlib.pylab as plt
 from reconstruction import compute_error
 
 
-def plot_graph(A, B, ax, bundle=None):
+def plot_graph(A, B, ax, bundle=None, verbose=True):
     """
     Plot graph on given axis.
 
@@ -28,11 +28,12 @@ def plot_graph(A, B, ax, bundle=None):
     graph = nx.from_numpy_matrix(A)
 
     # add external force
-    graph.add_node('F', color='red')
+    if verbose:
+        graph.add_node('F', color='red')
 
-    for i, b in enumerate(B):
-        if abs(b) > 1e-1:
-            graph.add_edge('F', i, weight=b, style='dashed')
+        for i, b in enumerate(B):
+            if abs(b) > 1e-1:
+                graph.add_edge('F', i, weight=b, style='dashed')
 
     # generate some node/edge properties
     node_labels = {}
@@ -71,21 +72,23 @@ def plot_graph(A, B, ax, bundle=None):
 
     nx.draw_networkx_nodes(
         graph, pos,
-        node_color=node_colors, node_size=800,
+        node_color=node_colors, node_size=800 if verbose else 400,
         font_size=20,
         ax=ax)
-    nx.draw_networkx_labels(
-        graph, pos,
-        node_labels,
-        ax=ax)
+    if verbose:
+        nx.draw_networkx_labels(
+            graph, pos,
+            node_labels,
+            ax=ax)
     nx.draw_networkx_edges(
         graph, pos,
         style=edge_style,
         ax=ax)
-    nx.draw_networkx_edge_labels(
-        graph, pos,
-        edge_labels,
-        ax=ax)
+    if verbose:
+        nx.draw_networkx_edge_labels(
+            graph, pos,
+            edge_labels,
+            ax=ax)
 
 def show_reconstruction_overview(syst, bundle):
     """
@@ -103,11 +106,13 @@ def show_reconstruction_overview(syst, bundle):
         rec_B
             Reconstructed vector B
     """
-    fig = plt.figure(figsize=(32, 8))
+    fig = plt.figure(figsize=(20, 8))
     gs = mpl.gridspec.GridSpec(1, 2)
 
     err_A, err_B = compute_error(bundle)
-    plt.suptitle(r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(np.mean(err_A), np.mean(err_B)))
+    plt.suptitle(
+        r'$A_{{err}} = {:.2}, B_{{err}} = {:.2}$'.format(
+            np.mean(err_A), np.mean(err_B)))
 
     # original graph
     orig_ax = plt.subplot(gs[0])
@@ -127,4 +132,6 @@ def show_reconstruction_overview(syst, bundle):
 
     # save plot
     plt.tight_layout()
-    plt.savefig('images/reconstruction_overview.pdf')
+    plt.savefig('images/reconstruction_overview.pdf', bbox_inches='tight')
+
+    return err_A, err_B
