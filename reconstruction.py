@@ -194,7 +194,7 @@ class Reconstructor(object):
         x = np.linalg.lstsq(rhs, lhs)[0]
 
         evals = np.linalg.eigvals(np.array(rhs).T.dot(rhs))
-        cn = abs(max(evals) / min(evals))
+        cn = np.sqrt(abs(max(evals) / min(evals)))
         print('Condition number:', cn, np.log10(cn))
 
         # extract reconstructed parameters from solution
