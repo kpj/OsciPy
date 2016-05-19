@@ -83,6 +83,7 @@ def plot_graph(A, B, ax, bundle=None, verbose=True):
     nx.draw_networkx_edges(
         graph, pos,
         style=edge_style,
+        alpha=1 if verbose else 0.3,
         ax=ax)
     if verbose:
         nx.draw_networkx_edge_labels(

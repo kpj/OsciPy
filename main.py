@@ -81,6 +81,7 @@ def main(inp):
     else:
         data, ts = inp.item()['data'], inp.item()['ts']
         orig_A, orig_B = inp.item()['orig_A'], inp.item()['orig_B']
+        dim = orig_A.shape[0]
 
         print('Original A:\n', orig_A)
         print('Original B:', orig_B)
@@ -99,7 +100,7 @@ def main(inp):
         'rec_A': rec_A,
         'rec_B': rec_B
     })
-    show_reconstruction_overview(bundle, verbose=True)
+    show_reconstruction_overview(bundle, verbose=dim < 20)
 
 if __name__ == '__main__':
     inp = None
