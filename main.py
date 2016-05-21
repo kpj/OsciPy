@@ -36,6 +36,7 @@ def main(inp):
         # generate basis of system
         graph = nx.gnp_random_graph(10, 0.6)
         dim = len(graph.nodes())
+        assert nx.is_connected(graph), 'Graph not connected'
 
         orig_A = nx.to_numpy_matrix(graph)
         orig_B = np.random.uniform(10, 20, size=dim)
