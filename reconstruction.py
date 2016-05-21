@@ -38,7 +38,7 @@ class Reconstructor(object):
     """
     Reconstruct system parameters from evolution observations
     """
-    def __init__(self, ts, data):
+    def __init__(self, ts, data, dim):
         """
         Initialize reconstruction process.
 
@@ -47,12 +47,13 @@ class Reconstructor(object):
                 List of time points of the simulation
             data
                 List of (OMEGA, [phase differences]) pairs
+            dim
+                Dimensions of used graph
         """
         self._ts = ts
         self._data = data
 
-        pdiffs = data[0][1]
-        self._graph_shape = (len(pdiffs), len(pdiffs))
+        self._graph_shape = (dim, dim)
 
     @property
     def ts(self):
@@ -101,8 +102,8 @@ class Reconstructor(object):
         # check for anomalies
         diff_diffs = np.mean([abs(p-p_) for p,p_ in zip(pdiffs, get_diffs(-10))])
         mdiff = abs(np.mean(diff_diffs))
-        if mdiff > 1e-6:
-            print('[WARNING] phase differences not in steady state ({:.2}). Expect failure of reconstruction.'.format(mdiff))
+        if mdiff > 1e-5:
+            return None
 
         return pdiffs
 

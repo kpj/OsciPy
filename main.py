@@ -66,9 +66,11 @@ def main(inp):
                 #print(pdiffs)
                 #System.plot_solution(syst.Phi(ts), sols, ts)
 
-                runs.append(pdiffs)
+                if pdiffs is not None:
+                    runs.append(pdiffs)
 
-            data.append(((OMEGA, omega), runs))
+            if len(runs) > 0:
+                data.append(((OMEGA, omega), runs))
 
         # cache results
         fname = '{}_{}'.format(datetime.now().strftime('%Y%m%d%H%M%S'), dim)
@@ -87,7 +89,7 @@ def main(inp):
         print('Original B:', orig_B)
 
     # reconstruct parameters
-    recon = Reconstructor(ts, data)
+    recon = Reconstructor(ts, data, dim)
     rec_A, rec_B = recon.reconstruct()
 
     print('Reconstructed A:\n', rec_A)
