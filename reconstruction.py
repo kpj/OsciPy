@@ -197,7 +197,7 @@ class Reconstructor(object):
         # solve system
         x = np.linalg.lstsq(rhs, lhs)[0]
 
-        cn = np.linalg.cond(rhs)
+        cn = np.linalg.cond(np.transpose(rhs).dot(rhs))
         print('Condition number:', cn, np.log10(cn))
 
         # extract reconstructed parameters from solution
