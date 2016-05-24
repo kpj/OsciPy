@@ -112,7 +112,7 @@ class System(object):
             {
                 'theta': theta,
                 'time': ts[i],
-                'oscillator': osci,
+                'oscillator': osci+1,
                 'source': 'raw'
             }
             for osci, sol in enumerate(sols)
