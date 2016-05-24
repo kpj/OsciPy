@@ -39,7 +39,7 @@ def setup_system(size=4):
         'system_config': system_config
     })
 
-def simulate_system(bundle, reps=10, check_laplacian=True, nested=False):
+def simulate_system(bundle, reps=10, check_laplacian=True):
     """ Generate data from system setup
     """
     # lonely investigation :'(
@@ -50,7 +50,7 @@ def simulate_system(bundle, reps=10, check_laplacian=True, nested=False):
     corr_mats = []
     var_sers = []
     all_sols = []
-    for _ in trange(reps, nested=nested):
+    for _ in trange(reps):
         sols, ts = solve_system(bundle.system_config)
 
         cmat = compute_correlation_matrix(sols)

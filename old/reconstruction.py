@@ -73,7 +73,7 @@ def process(bundle_pack, reps=10, skipper=1):
     repr_bundle = bundle_pack[0]
 
     data = []
-    for bundle in tqdm(bundle_pack, nested=True):
+    for bundle in tqdm(bundle_pack):
         all_sols = []
         for _ in range(reps):
             sols, ts = solve_system(bundle.system_config, force_mod=False)
@@ -180,7 +180,7 @@ def investigate_graph_influence(reps_per_config=50):
     df = pd.DataFrame(columns=['graph_property', 'parameter', 'relative_error'])
     for i, bundle_pack in enumerate(tqdm(systems)):
         tmp_A, tmp_B = [], []
-        for _ in trange(reps_per_config, nested=True):
+        for _ in trange(reps_per_config):
             res = process(bundle_pack)
 
             #plot_reconstruction_result(res)
@@ -214,7 +214,7 @@ def investigate_skip_influence(max_skip=100, reps_per_config=50):
     # generate data
     df = pd.DataFrame(columns=['skip', 'parameter', 'relative_error'])
     for i in tqdm(range(1, max_skip)):
-        for _ in trange(reps_per_config, nested=True):
+        for _ in trange(reps_per_config):
             res = process([syst], skipper=i)
             err_A, err_B = compute_error(res)
 

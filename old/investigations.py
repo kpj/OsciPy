@@ -107,7 +107,7 @@ def reconstruct_coupling_params(conf, data, verbose=True):
     diag_inds = np.where(
         np.arange(conf.A.size) % (conf.A.shape[0]+1) == 0)
 
-    for theta, theta_nex, o_vec, t in tqdm(aggr_sols, nested=not verbose):
+    for theta, theta_nex, o_vec, t in tqdm(aggr_sols):
         for i in range(conf.A.shape[0]):
             # coefficient matrix
             coeffs_A = np.zeros(conf.A.shape)
