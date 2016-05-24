@@ -186,16 +186,18 @@ class Reconstructor(object):
                     theta_dot = OMEGA - omega
                     lhs.append(theta_dot)
 
+        rank = np.linalg.matrix_rank(rhs)
         print('Using {} data points to solve system of {} variables (rank: {})'.format(
             len(rhs),
             self._graph_shape[0]**2,
-            np.linalg.matrix_rank(rhs)))
+            rank))
+        if rank < self._graph_shape[0]**2:
+            print('>>> [WARNING] underdetermined system <<<')
 
         # solve system
         x = np.linalg.lstsq(rhs, lhs)[0]
 
-        evals = np.linalg.eigvals(np.array(rhs).T.dot(rhs))
-        cn = np.sqrt(abs(max(evals) / min(evals)))
+        cn = np.linalg.cond(rhs)
         print('Condition number:', cn, np.log10(cn))
 
         # extract reconstructed parameters from solution

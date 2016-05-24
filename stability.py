@@ -267,7 +267,7 @@ class Functions(object):
     @staticmethod
     def get_eigenvalues(jac):
         # expect only eigenvalues of multiplicity one
-        assert set(jac.eigenvals().values()) == set([1])
+        assert set(jac.eigenvals().values()) == set([1]), jac.eigenvals()
 
         return sorted([N(k) for k in jac.eigenvals().keys()])
 
@@ -277,10 +277,10 @@ class Functions(object):
             if all([re(e) < 0 for e in eigvals])]
 
     @staticmethod
-    def main(dim=2, reps=50):
+    def main(dim=2, reps=100):
         def gen(o=5, B=2):
             data = [[] for _ in range(dim)]
-            for O in tqdm(np.linspace(0, 10, reps)):
+            for O in tqdm(np.linspace(0, 20, reps)):
                 f = Functions(dim)
                 eqs = f.get_equations({
                     f.O: O, f.o: o,
@@ -297,15 +297,17 @@ class Functions(object):
             return data
         # compute data
         data = {
-            r'$\omega=5, B=2$': gen(),
-            r'$\omega=5, B=5$': gen(B=5)
+            r'$\omega=5, B=2$': gen(o=5, B=2),
+            #r'$\omega=5, B=5$': gen(o=5, B=5),
+            #r'$\omega=15, B=2$': gen(o=15, B=2),
+            r'$\omega=15, B=5$': gen(o=15, B=5)
         }
 
         # plot result
         plt.figure()
 
         used_lbls = set()
-        colors = itertools.cycle(['blue', 'green', 'red'])
+        colors = itertools.cycle(['blue', 'green', 'red', 'violet'])
         for lbl, dat in data.items():
             col = next(colors)
             markers = itertools.cycle(['o', '*', 'D'])
@@ -344,8 +346,8 @@ def main():
     func = generate_ode()
     stabi = StabilityInvestigator(func)
 
-    stabi.phase_space(
-        initial_conds=[[2,1], [2,4], [4,1]])
+    stabi.phase_space()
+    #    initial_conds=[[2,1], [2,4], [4,1]])
 
 if __name__ == '__main__':
     #main()
